@@ -14,7 +14,7 @@ export function NavBar() {
       <div className="chanv-header-inner">
         <a
           href={process.env.NEXT_PUBLIC_HUB_URL || "https://chanv-apps-hub-fkdfx4bpva-nn.a.run.app/"}
-          className="chanv-logo-wrapper flex items-center"
+          className="chanv-logo-wrapper"
           title="Retour au Hub"
         >
           <Image
@@ -23,24 +23,18 @@ export function NavBar() {
             width={130}
             height={44}
             priority
-            className="h-10 w-auto"
+            className="main-logo"
           />
         </a>
-        <div>
-          <h1 className="text-xl font-bold m-0 leading-tight">🔮 Palantir</h1>
-          <p className="text-[10px] md:text-[11px] uppercase tracking-[3px] opacity-70 mt-1 m-0">
-            Groupe Chanv
-          </p>
+        <div className="header-titles">
+          <h1>🔮 Palantir</h1>
+          <p>Groupe Chanv</p>
         </div>
 
-        <div className="flex items-center gap-3 ml-auto">
-          <div className="text-right hidden sm:block">
-            <div className="text-sm font-semibold text-white whitespace-nowrap">
-              {session.displayName || session.email}
-            </div>
-            <div className="text-[11px] text-white/60 uppercase tracking-wider whitespace-nowrap">
-              {ROLE_LABELS[session.role]}
-            </div>
+        <div className="header-user-section">
+          <div className="user-details">
+            <span className="user-name">{session.displayName || session.email}</span>
+            <span className="user-role">{ROLE_LABELS[session.role]}</span>
           </div>
           <Sidebar />
         </div>
