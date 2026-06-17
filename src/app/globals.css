@@ -457,6 +457,67 @@ h4 {
 .refresh-btn:hover { border-color: var(--chanv-beige); color: var(--chanv-terre); }
 .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* --- Sort Bar --- */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.sort-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.sort-options {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--chanv-fibre);
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-chanv);
+}
+.sort-btn:hover {
+  background: var(--chanv-fibre);
+  color: var(--chanv-terre);
+}
+.sort-btn-active {
+  background: var(--chanv-terre);
+  color: var(--chanv-beige);
+  border-color: var(--chanv-terre);
+}
+.sort-btn-active:hover {
+  background: #3a3a3a;
+  color: var(--chanv-beige);
+}
+.sort-btn-icon {
+  font-size: 11px;
+}
+.sort-btn-label {
+  font-size: 11px;
+}
+.sort-dir-icon {
+  opacity: 0.7;
+}
+
 .last-refresh {
   display: flex;
   align-items: center;

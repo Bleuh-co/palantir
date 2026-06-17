@@ -75,9 +75,9 @@ export async function listServices(env: Env): Promise<ServiceInfo[]> {
     const conditions: any[] = svc.conditions || [];
     const readyCondition = conditions.find((c: any) => c.type === "Ready");
     const status: ServiceInfo["status"] =
-      readyCondition?.state === "CONDITION_SUCCEEDED"
+      readyCondition?.state === "CONDITION_SUCCEEDED" || readyCondition?.status === "True"
         ? "healthy"
-        : readyCondition?.state === "CONDITION_FAILED"
+        : readyCondition?.state === "CONDITION_FAILED" || readyCondition?.status === "False"
         ? "unhealthy"
         : "unknown";
 

@@ -1,13 +1,74 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ServiceCard, type ServiceCardData } from "./ServiceCard";
 import { AlertBanner } from "./AlertBanner";
 import {
   RefreshCw, Shield, Server, AlertTriangle, CheckCircle, Eye,
+  ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 
 type EnvFilter = "all" | "dev" | "prod";
+
+type SortField = "requests" | "errors" | "latency" | "instances" | "cpu" | "memory" | "name";
+type SortDir = "asc" | "desc";
+
+const SORT_OPTIONS: { value: SortField; label: string; icon: string }[] = [
+  { value: "requests", label: "Requêtes", icon: "⚡" },
+  { value: "errors", label: "Erreurs", icon: "⚠️" },
+  { value: "latency", label: "Latence", icon: "⏱️" },
+  { value: "instances", label: "Instances", icon: "📦" },
+  { value: "cpu", label: "CPU", icon: "🔧" },
+  { value: "memory", label: "Mémoire", icon: "💾" },
+  { value: "name", label: "Nom", icon: "🏷️" },
+];
+
+function parseCpu(cpu: string): number {
+  const n = parseFloat(cpu);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseMemory(mem: string): number {
+  const match = mem.match(/([\d.]+)\s*(Gi|Mi|G|M)?/i);
+  if (!match) return 0;
+  const val = parseFloat(match[1]);
+  const unit = (match[2] || "Mi").toLowerCase();
+  if (unit.startsWith("g")) return val * 1024;
+  return val;
+}
+
+function sortServices(services: ServiceCardData[], field: SortField, dir: SortDir): ServiceCardData[] {
+  const sorted = [...services].sort((a, b) => {
+    let cmp = 0;
+    switch (field) {
+      case "requests":
+        cmp = (a.requestsPerMin ?? 0) - (b.requestsPerMin ?? 0);
+        break;
+      case "errors":
+        cmp = (a.errorRate ?? 0) - (b.errorRate ?? 0);
+        break;
+      case "latency":
+        cmp = (a.latencyP50Ms ?? 0) - (b.latencyP50Ms ?? 0);
+        break;
+      case "instances":
+        cmp = (a.instanceCount ?? 0) - (b.instanceCount ?? 0);
+        break;
+      case "cpu":
+        cmp = parseCpu(a.cpu) - parseCpu(b.cpu);
+        break;
+      case "memory":
+        cmp = parseMemory(a.memory) - parseMemory(b.memory);
+        break;
+      case "name":
+        cmp = a.name.localeCompare(b.name);
+        break;
+    }
+    // Secondary sort: prod > dev
+    if (cmp === 0 && a.env !== b.env) return a.env === "prod" ? -1 : 1;
+    return cmp;
+  });
+  return dir === "desc" ? sorted.reverse() : sorted;
+}
 
 interface OverviewData {
   dev: { total: number; healthy: number; unhealthy: number; unknown: number };
@@ -28,11 +89,28 @@ interface AlertItem {
 
 export function DashboardClient() {
   const [envFilter, setEnvFilter] = useState<EnvFilter>("all");
-  const [services, setServices] = useState<ServiceCardData[]>([]);
+  const [rawServices, setRawServices] = useState<ServiceCardData[]>([]);
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  const [sortField, setSortField] = useState<SortField>("requests");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortField(field);
+      setSortDir(field === "name" ? "asc" : "desc");
+    }
+  };
+
+  const services = useMemo(
+    () => sortServices(rawServices, sortField, sortDir),
+    [rawServices, sortField, sortDir]
+  );
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -45,16 +123,7 @@ export function DashboardClient() {
 
       if (svcRes.ok) {
         const data = await svcRes.json();
-        const sorted = (data.services || []).sort((a: ServiceCardData, b: ServiceCardData) => {
-          // Highest consumption first
-          const aReq = a.requestsPerMin ?? 0;
-          const bReq = b.requestsPerMin ?? 0;
-          if (bReq !== aReq) return bReq - aReq;
-          // If equal, prod > dev
-          if (a.env !== b.env) return a.env === "prod" ? -1 : 1;
-          return 0;
-        });
-        setServices(sorted);
+        setRawServices(data.services || []);
       }
       if (overviewRes.ok) {
         const data = await overviewRes.json();
@@ -74,7 +143,6 @@ export function DashboardClient() {
 
   useEffect(() => {
     fetchData();
-    // Auto-refresh every 60s
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, [fetchData]);
@@ -120,7 +188,6 @@ export function DashboardClient() {
         </div>
 
         <div className="status-actions">
-          {/* Env toggle */}
           <div className="env-toggle">
             {(["all", "dev", "prod"] as EnvFilter[]).map((env) => (
               <button
@@ -141,6 +208,32 @@ export function DashboardClient() {
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </button>
+        </div>
+      </div>
+
+      {/* Sort Controls */}
+      <div className="sort-bar">
+        <div className="sort-label">
+          <ArrowUpDown size={12} />
+          <span>Trier par</span>
+        </div>
+        <div className="sort-options">
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`sort-btn ${sortField === opt.value ? "sort-btn-active" : ""}`}
+              onClick={() => toggleSort(opt.value)}
+              title={`Trier par ${opt.label}`}
+            >
+              <span className="sort-btn-icon">{opt.icon}</span>
+              <span className="sort-btn-label">{opt.label}</span>
+              {sortField === opt.value && (
+                sortDir === "desc"
+                  ? <ArrowDown size={11} className="sort-dir-icon" />
+                  : <ArrowUp size={11} className="sort-dir-icon" />
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
