@@ -528,8 +528,20 @@ h4 {
 }
 
 /* --- Firestore Section --- */
+/* ── Infrastructure Row (Budget + Firestore side by side) ── */
+.infra-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .infra-row { grid-template-columns: 1fr; }
+}
+
 /* ── Billing Section ────────────────────────────── */
-.billing-section { margin-bottom: 1.5rem; }
+.billing-section { }
 .billing-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -614,7 +626,6 @@ h4 {
 
 /* ── Firestore Section ──────────────────────────── */
 .firestore-section {
-  margin-bottom: 24px;
 }
 .section-title {
   display: flex;

@@ -275,112 +275,117 @@ export function DashboardClient() {
         </p>
       )}
 
-      {/* Budget Section */}
-      {Object.keys(budgets).length > 0 && (
-        <div className="billing-section">
-          <h3 className="section-title">
-            <DollarSign size={16} />
-            Budget
-          </h3>
-          <div className="billing-cards">
-            {Object.entries(budgets).map(([key, b]) => {
-              const barColor = b.pct >= 100 ? "#ef4444" : b.pct >= 80 ? "#f59e0b" : "#10b981";
-              const displayName = key.replace(/^budget-/, "").replace(/-/g, " ");
-              return (
-                <div key={key} className="billing-card">
-                  <div className="billing-header">
-                    <span className="billing-name">{displayName}</span>
-                    <span className="billing-pct" style={{ color: barColor }}>{b.pct}%</span>
-                  </div>
-                  <div className="billing-bar-track">
-                    <div
-                      className="billing-bar-fill"
-                      style={{ width: `${Math.min(b.pct, 100)}%`, backgroundColor: barColor }}
-                    />
-                    {b.pct > 100 && (
-                      <div
-                        className="billing-bar-overflow"
-                        style={{ width: `${Math.min(b.pct - 100, 100)}%` }}
-                      />
-                    )}
-                  </div>
-                  <div className="billing-details">
-                    <span className="billing-cost" style={{ color: barColor }}>
-                      ${b.cost.toFixed(2)} {b.currency}
-                    </span>
-                    <span className="billing-budget">
-                      / ${b.budget.toFixed(2)} {b.currency}
-                    </span>
-                  </div>
-                  {b.updatedAt && (
-                    <span className="billing-updated">
-                      MAJ: {new Date(b.updatedAt).toLocaleString("fr-CA", { dateStyle: "short", timeStyle: "short" })}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Infrastructure Row: Budget + Firestore side by side */}
+      {(Object.keys(budgets).length > 0 || Object.keys(firestore).length > 0) && (
+        <div className="infra-row">
+          {/* Budget */}
+          {Object.keys(budgets).length > 0 && (
+            <div className="billing-section">
+              <h3 className="section-title">
+                <DollarSign size={16} />
+                Budget
+              </h3>
+              <div className="billing-cards">
+                {Object.entries(budgets).map(([key, b]) => {
+                  const barColor = b.pct >= 100 ? "#ef4444" : b.pct >= 80 ? "#f59e0b" : "#10b981";
+                  const displayName = key.replace(/^budget-/, "").replace(/-/g, " ");
+                  return (
+                    <div key={key} className="billing-card">
+                      <div className="billing-header">
+                        <span className="billing-name">{displayName}</span>
+                        <span className="billing-pct" style={{ color: barColor }}>{b.pct}%</span>
+                      </div>
+                      <div className="billing-bar-track">
+                        <div
+                          className="billing-bar-fill"
+                          style={{ width: `${Math.min(b.pct, 100)}%`, backgroundColor: barColor }}
+                        />
+                        {b.pct > 100 && (
+                          <div
+                            className="billing-bar-overflow"
+                            style={{ width: `${Math.min(b.pct - 100, 100)}%` }}
+                          />
+                        )}
+                      </div>
+                      <div className="billing-details">
+                        <span className="billing-cost" style={{ color: barColor }}>
+                          ${b.cost.toFixed(2)} {b.currency}
+                        </span>
+                        <span className="billing-budget">
+                          / ${b.budget.toFixed(2)} {b.currency}
+                        </span>
+                      </div>
+                      {b.updatedAt && (
+                        <span className="billing-updated">
+                          MAJ: {new Date(b.updatedAt).toLocaleString("fr-CA", { dateStyle: "short", timeStyle: "short" })}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-      {/* Firestore Usage Section */}
-      {Object.keys(firestore).length > 0 && (
-        <div className="firestore-section">
-          <h3 className="section-title">
-            <Database size={16} />
-            Firestore
-          </h3>
-          <div className="firestore-cards">
-            {Object.entries(firestore).map(([env, data]) => {
-              const readColor = data.readsLastHour > 1_000_000 ? "#ef4444"
-                : data.readsLastHour > 100_000 ? "#f59e0b" : "#10b981";
-              const writeColor = data.writesLastHour > 500_000 ? "#ef4444"
-                : data.writesLastHour > 50_000 ? "#f59e0b" : "#10b981";
-              return (
-                <div key={env} className="firestore-card">
-                  <div className="fs-card-header">
-                    <span className={`sc-env-badge sc-env-${env}`}>{env.toUpperCase()}</span>
-                  </div>
-                  <div className="fs-sparkline">
-                    <SparkLine
-                      data={data.sparkline || []}
-                      width={200}
-                      height={40}
-                      color={readColor}
-                      strokeWidth={1.5}
-                    />
-                  </div>
-                  <div className="fs-metrics">
-                    <div className="fs-metric">
-                      <span className="fs-metric-label">Lectures/h</span>
-                      <span className="fs-metric-value" style={{ color: readColor }}>
-                        {data.readsLastHour.toLocaleString("fr-CA")}
-                      </span>
+          {/* Firestore */}
+          {Object.keys(firestore).length > 0 && (
+            <div className="firestore-section">
+              <h3 className="section-title">
+                <Database size={16} />
+                Firestore
+              </h3>
+              <div className="firestore-cards">
+                {Object.entries(firestore).map(([env, data]) => {
+                  const readColor = data.readsLastHour > 1_000_000 ? "#ef4444"
+                    : data.readsLastHour > 100_000 ? "#f59e0b" : "#10b981";
+                  const writeColor = data.writesLastHour > 500_000 ? "#ef4444"
+                    : data.writesLastHour > 50_000 ? "#f59e0b" : "#10b981";
+                  return (
+                    <div key={env} className="firestore-card">
+                      <div className="fs-card-header">
+                        <span className={`sc-env-badge sc-env-${env}`}>{env.toUpperCase()}</span>
+                      </div>
+                      <div className="fs-sparkline">
+                        <SparkLine
+                          data={data.sparkline || []}
+                          width={200}
+                          height={40}
+                          color={readColor}
+                          strokeWidth={1.5}
+                        />
+                      </div>
+                      <div className="fs-metrics">
+                        <div className="fs-metric">
+                          <span className="fs-metric-label">Lectures/h</span>
+                          <span className="fs-metric-value" style={{ color: readColor }}>
+                            {data.readsLastHour.toLocaleString("fr-CA")}
+                          </span>
+                        </div>
+                        <div className="fs-metric">
+                          <span className="fs-metric-label">Écritures/h</span>
+                          <span className="fs-metric-value" style={{ color: writeColor }}>
+                            {data.writesLastHour.toLocaleString("fr-CA")}
+                          </span>
+                        </div>
+                        <div className="fs-metric">
+                          <span className="fs-metric-label">Suppressions/h</span>
+                          <span className="fs-metric-value">
+                            {data.deletesLastHour.toLocaleString("fr-CA")}
+                          </span>
+                        </div>
+                        <div className="fs-metric">
+                          <span className="fs-metric-label">Pic lectures</span>
+                          <span className="fs-metric-value" style={{ color: data.readsPeak > 1_000_000 ? "#ef4444" : undefined }}>
+                            {data.readsPeak.toLocaleString("fr-CA")}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="fs-metric">
-                      <span className="fs-metric-label">Écritures/h</span>
-                      <span className="fs-metric-value" style={{ color: writeColor }}>
-                        {data.writesLastHour.toLocaleString("fr-CA")}
-                      </span>
-                    </div>
-                    <div className="fs-metric">
-                      <span className="fs-metric-label">Suppressions/h</span>
-                      <span className="fs-metric-value">
-                        {data.deletesLastHour.toLocaleString("fr-CA")}
-                      </span>
-                    </div>
-                    <div className="fs-metric">
-                      <span className="fs-metric-label">Pic lectures</span>
-                      <span className="fs-metric-value" style={{ color: data.readsPeak > 1_000_000 ? "#ef4444" : undefined }}>
-                        {data.readsPeak.toLocaleString("fr-CA")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
