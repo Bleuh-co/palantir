@@ -45,7 +45,16 @@ export function DashboardClient() {
 
       if (svcRes.ok) {
         const data = await svcRes.json();
-        setServices(data.services || []);
+        const sorted = (data.services || []).sort((a: ServiceCardData, b: ServiceCardData) => {
+          // Highest consumption first
+          const aReq = a.requestsPerMin ?? 0;
+          const bReq = b.requestsPerMin ?? 0;
+          if (bReq !== aReq) return bReq - aReq;
+          // If equal, prod > dev
+          if (a.env !== b.env) return a.env === "prod" ? -1 : 1;
+          return 0;
+        });
+        setServices(sorted);
       }
       if (overviewRes.ok) {
         const data = await overviewRes.json();
