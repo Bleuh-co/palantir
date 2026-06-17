@@ -153,16 +153,6 @@ h4 {
     overflow: hidden;
     padding: 40px 20px 90px;
   }
-  .chanv-header-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    position: relative;
-    z-index: 10;
-    flex-wrap: wrap;
-  }
   .chanv-header::after {
     content: "";
     position: absolute;
@@ -174,61 +164,10 @@ h4 {
     transform: skewY(-2deg);
   }
   .chanv-logo-wrapper {
-    text-decoration: none;
-    display: flex;
-    align-items: center;
     background: var(--chanv-fibre);
     padding: 12px 18px;
-    border-radius: 20px;
+    border-radius: var(--radius-chanv);
     box-shadow: var(--shadow-soft);
-    transition: var(--transition);
-    flex-shrink: 0;
-  }
-  .chanv-logo-wrapper:hover {
-    filter: brightness(0.97);
-    box-shadow: var(--shadow-bold);
-  }
-  .main-logo {
-    height: 40px;
-    display: block;
-  }
-  .header-titles h1 {
-    font-size: 20px;
-    font-weight: 700;
-    color: white;
-    margin: 0;
-    line-height: 1.2;
-  }
-  .header-titles p {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-top: 4px;
-    opacity: 0.7;
-  }
-  .header-user-section {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-left: auto;
-  }
-  .user-details {
-    text-align: right;
-  }
-  .user-name {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: white;
-    white-space: nowrap;
-  }
-  .user-role {
-    display: block;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: rgba(255, 255, 255, 0.6);
-    white-space: nowrap;
   }
   .chanv-auth-btn {
     display: inline-flex;
