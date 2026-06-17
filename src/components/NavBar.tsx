@@ -27,7 +27,7 @@ export function NavBar() {
           />
         </a>
         <div>
-          <h1 className="text-xl font-bold m-0 leading-tight">🚀 Palantir</h1>
+          <h1 className="text-xl font-bold m-0 leading-tight">🔮 Palantir</h1>
           <p className="text-[10px] md:text-[11px] uppercase tracking-[3px] opacity-70 mt-1 m-0">
             Groupe Chanv
           </p>

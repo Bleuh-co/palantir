@@ -109,6 +109,9 @@ export interface ServiceMetrics {
   latencyP50: MetricPoint[];
   latencyP99: MetricPoint[];
   instanceCount: MetricPoint[];
+  cpuUtilization: MetricPoint[];     // 0–1 (fraction)
+  memoryUtilization: MetricPoint[];  // 0–1 (fraction)
+  billableTime: MetricPoint[];       // seconds
 }
 
 type Period = "1h" | "6h" | "24h" | "7d";
@@ -192,7 +195,7 @@ export async function getServiceMetrics(
   const projectId = PROJECTS[env].id;
   const baseFilter = `resource.type="cloud_run_revision" resource.labels.service_name="${serviceName}"`;
 
-  const [requestCount, errorCount, latencyP50, latencyP99, instanceCount] =
+  const [requestCount, errorCount, latencyP50, latencyP99, instanceCount, cpuUtilization, memoryUtilization, billableTime] =
     await Promise.all([
       // Request count
       queryTimeSeries(
@@ -224,9 +227,27 @@ export async function getServiceMetrics(
         `${baseFilter} metric.type="run.googleapis.com/container/instance_count"`,
         period, "ALIGN_MAX", "REDUCE_SUM"
       ),
+      // CPU utilization (0–1)
+      queryTimeSeries(
+        projectId,
+        `${baseFilter} metric.type="run.googleapis.com/container/cpu/utilizations"`,
+        period, "ALIGN_PERCENTILE_99", "REDUCE_MEAN"
+      ),
+      // Memory utilization (0–1)
+      queryTimeSeries(
+        projectId,
+        `${baseFilter} metric.type="run.googleapis.com/container/memory/utilizations"`,
+        period, "ALIGN_PERCENTILE_99", "REDUCE_MEAN"
+      ),
+      // Billable instance time (seconds)
+      queryTimeSeries(
+        projectId,
+        `${baseFilter} metric.type="run.googleapis.com/container/billable_instance_time"`,
+        period, "ALIGN_SUM", "REDUCE_SUM"
+      ),
     ]);
 
-  return { requestCount, errorCount, latencyP50, latencyP99, instanceCount };
+  return { requestCount, errorCount, latencyP50, latencyP99, instanceCount, cpuUtilization, memoryUtilization, billableTime };
 }
 
 // ── Quick summary for overview ──────────────────────────────────────────

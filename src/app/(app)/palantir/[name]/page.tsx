@@ -22,6 +22,9 @@ interface ServiceMetrics {
   latencyP50: MetricPoint[];
   latencyP99: MetricPoint[];
   instanceCount: MetricPoint[];
+  cpuUtilization: MetricPoint[];
+  memoryUtilization: MetricPoint[];
+  billableTime: MetricPoint[];
 }
 
 type Period = "1h" | "6h" | "24h" | "7d";
@@ -35,9 +38,14 @@ const PERIODS: { value: Period; label: string }[] = [
 
 function formatTime(isoStr: string, period: Period) {
   const d = new Date(isoStr);
-  if (period === "7d") return d.toLocaleDateString("fr-CA", { day: "2-digit", month: "short" });
-  if (period === "24h") return d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  if (period === "7d") {
+    const dd = String(d.getDate()).padStart(2, "0");
+    const months = ["jan", "fév", "mar", "avr", "mai", "jun", "jul", "aoû", "sep", "oct", "nov", "déc"];
+    return `${dd} ${months[d.getMonth()]}`;
+  }
+  return `${hh}:${mm}`;
 }
 
 function MetricChart({
@@ -220,6 +228,27 @@ export default function ServiceDetailPage() {
               data={metrics.instanceCount}
               color="#10b981"
               unit=""
+              period={period}
+            />
+            <MetricChart
+              title="CPU (P99)"
+              data={(metrics.cpuUtilization || []).map(p => ({ ...p, value: p.value * 100 }))}
+              color="#f59e0b"
+              unit="%"
+              period={period}
+            />
+            <MetricChart
+              title="Mémoire (P99)"
+              data={(metrics.memoryUtilization || []).map(p => ({ ...p, value: p.value * 100 }))}
+              color="#ec4899"
+              unit="%"
+              period={period}
+            />
+            <MetricChart
+              title="Temps facturable"
+              data={metrics.billableTime || []}
+              color="#6366f1"
+              unit="s"
               period={period}
             />
           </div>
