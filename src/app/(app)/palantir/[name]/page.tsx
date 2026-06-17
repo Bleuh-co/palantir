@@ -169,6 +169,16 @@ export default function ServiceDetailPage() {
         <div className="detail-header">
           <h1 className="detail-title">{displayName}</h1>
           <div className="detail-actions">
+            <a
+              href={`https://console.cloud.google.com/run/detail/${env === "prod" ? "northamerica-northeast1" : "northamerica-northeast1"}/${name}/metrics?project=${env === "prod" ? "antigravity-20260107" : "gandalf-dev-497413"}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cloudrun-link"
+              title="Ouvrir dans Google Cloud Run Console"
+            >
+              <ExternalLink size={14} />
+              Cloud Run
+            </a>
             <div className="period-toggle">
               {PERIODS.map((p) => (
                 <button
