@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listServices, getServiceMetrics, PROJECTS, type Env } from "@/lib/gcp";
-import { createAlert } from "@/lib/alerts";
+import { createAlert, cleanupOldAlerts } from "@/lib/alerts";
 import {
   storeSnapshot,
   getBaseline,
@@ -145,10 +145,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Cleanup old snapshots
-    let cleaned = 0;
+    // 6. Cleanup old data (nightly)
+    let cleanedSnapshots = 0;
+    let cleanedAlerts = 0;
     if (shouldCleanup) {
-      cleaned = await cleanupOldSnapshots();
+      cleanedSnapshots = await cleanupOldSnapshots();
+      cleanedAlerts = await cleanupOldAlerts();
     }
 
     const duration = Date.now() - startTime;
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
         `${totalSnapshots} snapshots stored, ` +
         `${totalAnomalies} anomalies detected, ` +
         `${baselinesUpdated} baselines updated, ` +
-        `${cleaned} old snapshots cleaned, ` +
+        `${cleanedSnapshots} old snapshots + ${cleanedAlerts} old alerts cleaned, ` +
         `${duration}ms`
     );
 
@@ -167,7 +169,8 @@ export async function POST(req: NextRequest) {
       snapshots: totalSnapshots,
       anomalies: totalAnomalies,
       baselinesUpdated,
-      cleaned,
+      cleanedSnapshots,
+      cleanedAlerts,
       durationMs: duration,
     });
   } catch (err: any) {

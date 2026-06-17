@@ -275,3 +275,30 @@ export async function checkService(
 
   return { alerts };
 }
+
+// ── Cleanup ─────────────────────────────────────────────────────────────
+
+/**
+ * Delete acknowledged alerts older than 90 days.
+ * Called from the nightly CRON cleanup.
+ */
+export async function cleanupOldAlerts(): Promise<number> {
+  const db = adminDb();
+  const cutoff = new Date(Date.now() - 90 * 86400 * 1000).toISOString();
+
+  const snap = await db
+    .collection("palantir_alerts")
+    .where("status", "==", "acknowledged")
+    .where("createdAt", "<", cutoff)
+    .limit(400)
+    .get();
+
+  if (snap.empty) return 0;
+
+  const batch = db.batch();
+  snap.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
+
+  console.log(`[Alerts] Cleaned ${snap.size} old acknowledged alerts`);
+  return snap.size;
+}
