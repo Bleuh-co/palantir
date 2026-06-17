@@ -1,0 +1,27 @@
+{
+  "name": "Palantir — Chanv",
+  "short_name": "Palantir",
+  "description": "Palantir — Groupe Chanv",
+  "start_url": "/palantir",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#282828",
+  "categories": ["business", "productivity"],
+  "lang": "fr-CA",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
