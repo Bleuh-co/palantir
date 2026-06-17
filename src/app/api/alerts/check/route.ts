@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listServices, getServiceMetrics, PROJECTS, type Env } from "@/lib/gcp";
 import { createAlert, cleanupOldAlerts } from "@/lib/alerts";
+import { notifyAlertToAdmins } from "@/lib/hub-notify";
 import {
   storeSnapshot,
   getBaseline,
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
   let totalAnomalies = 0;
   let totalSnapshots = 0;
   let baselinesUpdated = 0;
+  let notificationsSent = 0;
 
   // Determine if we should recompute baselines (every 6h = minute is 0 and hour % 6 === 0)
   const now = new Date();
@@ -129,6 +131,26 @@ export async function POST(req: NextRequest) {
                 createdAt: now.toISOString(),
               });
               totalAnomalies++;
+
+              // 4b. Push notification to admins for critical anomalies
+              // (warning = silent in dashboard only, critical = push)
+              if (anomaly.severity === "critical") {
+                try {
+                  const sent = await notifyAlertToAdmins({
+                    service: svc.name,
+                    env,
+                    severity: anomaly.severity,
+                    message:
+                      `${anomaly.label}: ${anomaly.currentValue} ` +
+                      `(baseline: ${anomaly.baselineMean} ± ${anomaly.baselineStddev}, ` +
+                      `${anomaly.deviations}σ au-dessus)`,
+                    type: `anomaly_${anomaly.metric}`,
+                  });
+                  notificationsSent += sent;
+                } catch (notifErr: any) {
+                  console.warn(`[CRON] Notification failed:`, notifErr.message);
+                }
+              }
             }
           }
 
@@ -158,6 +180,7 @@ export async function POST(req: NextRequest) {
       `[CRON] Complete: ${totalChecked} services checked, ` +
         `${totalSnapshots} snapshots stored, ` +
         `${totalAnomalies} anomalies detected, ` +
+        `${notificationsSent} notifications sent, ` +
         `${baselinesUpdated} baselines updated, ` +
         `${cleanedSnapshots} old snapshots + ${cleanedAlerts} old alerts cleaned, ` +
         `${duration}ms`
@@ -168,6 +191,7 @@ export async function POST(req: NextRequest) {
       checked: totalChecked,
       snapshots: totalSnapshots,
       anomalies: totalAnomalies,
+      notificationsSent,
       baselinesUpdated,
       cleanedSnapshots,
       cleanedAlerts,
