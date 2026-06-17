@@ -6,7 +6,7 @@ import { AlertBanner } from "./AlertBanner";
 import { SparkLine } from "./SparkLine";
 import {
   RefreshCw, Shield, Server, AlertTriangle, CheckCircle, Eye,
-  ArrowUpDown, ArrowUp, ArrowDown, Database,
+  ArrowUpDown, ArrowUp, ArrowDown, Database, DollarSign,
 } from "lucide-react";
 
 type EnvFilter = "all" | "dev" | "prod";
@@ -96,12 +96,22 @@ interface FirestoreEnvData {
   sparkline: number[];
 }
 
+interface BudgetData {
+  cost: number;
+  budget: number;
+  pct: number;
+  currency: string;
+  lastNotifiedPct: number;
+  updatedAt: string;
+}
+
 export function DashboardClient() {
   const [envFilter, setEnvFilter] = useState<EnvFilter>("all");
   const [rawServices, setRawServices] = useState<ServiceCardData[]>([]);
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [firestore, setFirestore] = useState<Record<string, FirestoreEnvData>>({});
+  const [budgets, setBudgets] = useState<Record<string, BudgetData>>({});
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -125,11 +135,12 @@ export function DashboardClient() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [svcRes, overviewRes, alertRes, fsRes] = await Promise.all([
+      const [svcRes, overviewRes, alertRes, fsRes, billingRes] = await Promise.all([
         fetch(`/api/services?env=${envFilter}`),
         fetch("/api/overview"),
         fetch("/api/alerts?status=active"),
         fetch(`/api/firestore?env=${envFilter}&mode=quick`),
+        fetch("/api/billing/status"),
       ]);
 
       if (svcRes.ok) {
@@ -147,6 +158,10 @@ export function DashboardClient() {
       if (fsRes.ok) {
         const data = await fsRes.json();
         setFirestore(data.firestore || {});
+      }
+      if (billingRes.ok) {
+        const data = await billingRes.json();
+        setBudgets(data.budgets || {});
       }
       setLastRefresh(new Date());
     } catch (err) {
@@ -258,6 +273,55 @@ export function DashboardClient() {
           <Eye size={12} />
           Dernière mise à jour : {lastRefresh.toLocaleTimeString("fr-CA")}
         </p>
+      )}
+
+      {/* Budget Section */}
+      {Object.keys(budgets).length > 0 && (
+        <div className="billing-section">
+          <h3 className="section-title">
+            <DollarSign size={16} />
+            Budget
+          </h3>
+          <div className="billing-cards">
+            {Object.entries(budgets).map(([key, b]) => {
+              const barColor = b.pct >= 100 ? "#ef4444" : b.pct >= 80 ? "#f59e0b" : "#10b981";
+              const displayName = key.replace(/^budget-/, "").replace(/-/g, " ");
+              return (
+                <div key={key} className="billing-card">
+                  <div className="billing-header">
+                    <span className="billing-name">{displayName}</span>
+                    <span className="billing-pct" style={{ color: barColor }}>{b.pct}%</span>
+                  </div>
+                  <div className="billing-bar-track">
+                    <div
+                      className="billing-bar-fill"
+                      style={{ width: `${Math.min(b.pct, 100)}%`, backgroundColor: barColor }}
+                    />
+                    {b.pct > 100 && (
+                      <div
+                        className="billing-bar-overflow"
+                        style={{ width: `${Math.min(b.pct - 100, 100)}%` }}
+                      />
+                    )}
+                  </div>
+                  <div className="billing-details">
+                    <span className="billing-cost" style={{ color: barColor }}>
+                      ${b.cost.toFixed(2)} {b.currency}
+                    </span>
+                    <span className="billing-budget">
+                      / ${b.budget.toFixed(2)} {b.currency}
+                    </span>
+                  </div>
+                  {b.updatedAt && (
+                    <span className="billing-updated">
+                      MAJ: {new Date(b.updatedAt).toLocaleString("fr-CA", { dateStyle: "short", timeStyle: "short" })}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Firestore Usage Section */}

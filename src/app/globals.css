@@ -528,6 +528,91 @@ h4 {
 }
 
 /* --- Firestore Section --- */
+/* ── Billing Section ────────────────────────────── */
+.billing-section { margin-bottom: 1.5rem; }
+.billing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.billing-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.billing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.billing-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--text-primary);
+}
+.billing-pct {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.billing-bar-track {
+  width: 100%;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.billing-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+.billing-bar-overflow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    #ef4444,
+    #ef4444 4px,
+    #dc2626 4px,
+    #dc2626 8px
+  );
+  border-radius: 0 4px 4px 0;
+  animation: overflow-pulse 1.5s ease-in-out infinite;
+}
+@keyframes overflow-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.billing-details {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.billing-cost {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.billing-budget {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.billing-updated {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ── Firestore Section ──────────────────────────── */
 .firestore-section {
   margin-bottom: 24px;
 }

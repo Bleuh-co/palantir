@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAlert } from "@/lib/alerts";
 import { notifyAlertToAdmins } from "@/lib/hub-notify";
-import { getFirestore } from "firebase-admin/firestore";
-import { initFirebaseAdmin } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 
 /**
  * POST /api/billing/webhook
@@ -59,8 +58,7 @@ export async function POST(req: NextRequest) {
     const budgetKey = `budget-${(budgetDisplayName || "unknown").toLowerCase().replace(/\s+/g, "-")}`;
 
     // ── Deduplication: check what we already notified ──
-    initFirebaseAdmin();
-    const db = getFirestore();
+    const db = adminDb();
     const stateRef = db.collection("palantir_budget_state").doc(budgetKey);
     const stateDoc = await stateRef.get();
     const state = stateDoc.exists ? stateDoc.data()! : {};
