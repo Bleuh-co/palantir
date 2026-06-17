@@ -250,14 +250,16 @@ export async function POST(req: NextRequest) {
             });
             if (alertId) firestoreAlerts++;
 
-            if (severity === "critical" && alertId) {
+            // ALWAYS notify for Firestore spikes — even warnings cost real money
+            if (alertId) {
               try {
                 trackOp(2);
+                const emoji = severity === "critical" ? "🔥" : "⚠️";
                 const sent = await notifyAlertToAdmins({
                   service: `Firestore ${env.toUpperCase()}`,
                   env,
                   severity,
-                  message: `🔥 ${formatted} lectures Firestore/heure — possible boucle infinie !`,
+                  message: `${emoji} ${formatted} lectures Firestore/heure (seuil: ${FIRESTORE_READ_THRESHOLD.toLocaleString("fr-CA")})`,
                   type: "firestore_reads_spike",
                 });
                 notificationsSent += sent;
@@ -284,14 +286,16 @@ export async function POST(req: NextRequest) {
             });
             if (alertId) firestoreAlerts++;
 
-            if (severity === "critical" && alertId) {
+            // ALWAYS notify for Firestore spikes
+            if (alertId) {
               try {
                 trackOp(2);
+                const emoji = severity === "critical" ? "🔥" : "⚠️";
                 const sent = await notifyAlertToAdmins({
                   service: `Firestore ${env.toUpperCase()}`,
                   env,
                   severity,
-                  message: `🔥 ${formatted} écritures Firestore/heure — possible boucle infinie !`,
+                  message: `${emoji} ${formatted} écritures Firestore/heure (seuil: ${FIRESTORE_WRITE_THRESHOLD.toLocaleString("fr-CA")})`,
                   type: "firestore_writes_spike",
                 });
                 notificationsSent += sent;
