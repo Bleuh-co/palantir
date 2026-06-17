@@ -167,6 +167,96 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── 7. Firestore usage monitoring ──────────────────────────────────
+    // Check Firestore reads/writes per project for anomalies
+    let firestoreAlerts = 0;
+    const FIRESTORE_READ_THRESHOLD = 100_000;   // per hour — 100K reads/h = warning territory
+    const FIRESTORE_READ_CRITICAL  = 1_000_000; // 1M reads/h = critical
+    const FIRESTORE_WRITE_THRESHOLD = 50_000;
+    const FIRESTORE_WRITE_CRITICAL  = 500_000;
+
+    for (const env of ["dev", "prod"] as Env[]) {
+      try {
+        const { getFirestoreQuickMetrics } = await import("@/lib/gcp");
+        const fsMetrics = await getFirestoreQuickMetrics(env);
+
+        // Check reads spike
+        if (fsMetrics.readsLastHour > FIRESTORE_READ_THRESHOLD) {
+          const severity = fsMetrics.readsLastHour > FIRESTORE_READ_CRITICAL ? "critical" : "warning";
+          const formatted = fsMetrics.readsLastHour.toLocaleString("fr-CA");
+          const alertId = await createAlert({
+            service: `firestore-${env}`,
+            env,
+            type: "firestore_reads_spike",
+            severity: severity as "critical" | "warning",
+            status: "active",
+            message: `Firestore ${env.toUpperCase()}: ${formatted} lectures/h (seuil: ${FIRESTORE_READ_THRESHOLD.toLocaleString("fr-CA")})`,
+            value: fsMetrics.readsLastHour,
+            threshold: FIRESTORE_READ_THRESHOLD,
+            createdAt: now.toISOString(),
+          });
+          if (alertId) firestoreAlerts++;
+
+          // Push notification for critical
+          if (severity === "critical" && alertId) {
+            try {
+              const sent = await notifyAlertToAdmins({
+                service: `Firestore ${env.toUpperCase()}`,
+                env,
+                severity,
+                message: `🔥 ${formatted} lectures Firestore/heure — possible boucle infinie !`,
+                type: "firestore_reads_spike",
+              });
+              notificationsSent += sent;
+            } catch (notifErr: any) {
+              console.warn(`[CRON] Firestore notification failed:`, notifErr.message);
+            }
+          }
+        }
+
+        // Check writes spike
+        if (fsMetrics.writesLastHour > FIRESTORE_WRITE_THRESHOLD) {
+          const severity = fsMetrics.writesLastHour > FIRESTORE_WRITE_CRITICAL ? "critical" : "warning";
+          const formatted = fsMetrics.writesLastHour.toLocaleString("fr-CA");
+          const alertId = await createAlert({
+            service: `firestore-${env}`,
+            env,
+            type: "firestore_writes_spike",
+            severity: severity as "critical" | "warning",
+            status: "active",
+            message: `Firestore ${env.toUpperCase()}: ${formatted} écritures/h (seuil: ${FIRESTORE_WRITE_THRESHOLD.toLocaleString("fr-CA")})`,
+            value: fsMetrics.writesLastHour,
+            threshold: FIRESTORE_WRITE_THRESHOLD,
+            createdAt: now.toISOString(),
+          });
+          if (alertId) firestoreAlerts++;
+
+          if (severity === "critical" && alertId) {
+            try {
+              const sent = await notifyAlertToAdmins({
+                service: `Firestore ${env.toUpperCase()}`,
+                env,
+                severity,
+                message: `🔥 ${formatted} écritures Firestore/heure — possible boucle infinie !`,
+                type: "firestore_writes_spike",
+              });
+              notificationsSent += sent;
+            } catch (notifErr: any) {
+              console.warn(`[CRON] Firestore notification failed:`, notifErr.message);
+            }
+          }
+        }
+
+        console.log(
+          `[CRON] Firestore ${env}: reads=${fsMetrics.readsLastHour.toLocaleString("fr-CA")}/h, ` +
+          `writes=${fsMetrics.writesLastHour.toLocaleString("fr-CA")}/h, ` +
+          `peak_reads=${fsMetrics.readsPeak.toLocaleString("fr-CA")}/h`
+        );
+      } catch (fsErr: any) {
+        console.warn(`[CRON] Firestore metrics failed for ${env}:`, fsErr.message);
+      }
+    }
+
     // 6. Cleanup old data (nightly)
     let cleanedSnapshots = 0;
     let cleanedAlerts = 0;
@@ -180,6 +270,7 @@ export async function POST(req: NextRequest) {
       `[CRON] Complete: ${totalChecked} services checked, ` +
         `${totalSnapshots} snapshots stored, ` +
         `${totalAnomalies} anomalies detected, ` +
+        `${firestoreAlerts} firestore alerts, ` +
         `${notificationsSent} notifications sent, ` +
         `${baselinesUpdated} baselines updated, ` +
         `${cleanedSnapshots} old snapshots + ${cleanedAlerts} old alerts cleaned, ` +
@@ -191,6 +282,7 @@ export async function POST(req: NextRequest) {
       checked: totalChecked,
       snapshots: totalSnapshots,
       anomalies: totalAnomalies,
+      firestoreAlerts,
       notificationsSent,
       baselinesUpdated,
       cleanedSnapshots,

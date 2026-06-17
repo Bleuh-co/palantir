@@ -527,6 +527,69 @@ h4 {
   margin-bottom: 20px;
 }
 
+/* --- Firestore Section --- */
+.firestore-section {
+  margin-bottom: 24px;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--chanv-terre);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.firestore-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.firestore-card {
+  background: var(--chanv-blanc);
+  border: 1px solid var(--chanv-fibre);
+  border-radius: 14px;
+  padding: 16px;
+  transition: var(--transition-chanv);
+}
+.firestore-card:hover {
+  box-shadow: var(--shadow-soft);
+  border-color: var(--chanv-beige);
+}
+.fs-card-header {
+  margin-bottom: 8px;
+}
+.fs-sparkline {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+}
+.fs-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fs-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fs-metric-label {
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+.fs-metric-value {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--chanv-terre);
+}
+
 /* --- Service Grid --- */
 .services-grid {
   display: grid;
