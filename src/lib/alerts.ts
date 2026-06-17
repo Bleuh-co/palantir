@@ -122,16 +122,33 @@ export async function getAlerts(
   status?: AlertStatus
 ): Promise<Alert[]> {
   const db = adminDb();
-  let query = db.collection("palantir_alerts").orderBy("createdAt", "desc").limit(100);
-  if (status) {
-    query = db
-      .collection("palantir_alerts")
-      .where("status", "==", status)
-      .orderBy("createdAt", "desc")
-      .limit(100);
+  try {
+    let query: FirebaseFirestore.Query = db.collection("palantir_alerts").orderBy("createdAt", "desc").limit(100);
+    if (status) {
+      query = db
+        .collection("palantir_alerts")
+        .where("status", "==", status)
+        .orderBy("createdAt", "desc")
+        .limit(100);
+    }
+    const snap = await query.get();
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Alert));
+  } catch (err: any) {
+    // Fallback if index not ready: simple query without ordering
+    console.warn("[Alerts] Index not ready, falling back:", err.message);
+    try {
+      let query: FirebaseFirestore.Query = db.collection("palantir_alerts").limit(100);
+      if (status) {
+        query = db.collection("palantir_alerts").where("status", "==", status).limit(100);
+      }
+      const snap = await query.get();
+      const alerts = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Alert));
+      alerts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return alerts;
+    } catch {
+      return [];
+    }
   }
-  const snap = await query.get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Alert));
 }
 
 export async function acknowledgeAlert(
