@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { NavBar } from "@/components/NavBar";
 import {
   ArrowLeft, Activity, AlertTriangle, Clock, Layers, Cpu, HardDrive,
   RefreshCw, ExternalLink,
@@ -146,7 +145,6 @@ export default function ServiceDetailPage() {
 
   return (
     <>
-      <NavBar />
       <main className="dashboard-main">
         {/* Breadcrumb */}
         <div className="detail-breadcrumb">

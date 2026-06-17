@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { NavBar } from "@/components/NavBar";
 import {
   ArrowLeft, AlertTriangle, CheckCircle, Shield, Clock, Send,
 } from "lucide-react";
@@ -103,7 +102,6 @@ export default function AlertsPage() {
 
   return (
     <>
-      <NavBar />
       <main className="dashboard-main">
         <div className="detail-breadcrumb">
           <Link href="/palantir" className="detail-back">

@@ -9,7 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <NavBar />
-      <div className="chanv-surface mx-auto max-w-5xl px-4 pb-16">{children}</div>
+      <div className="chanv-surface">{children}</div>
     </>
   );
 }
