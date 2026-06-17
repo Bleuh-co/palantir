@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
-import { listServices, PROJECTS, type Env, type ServiceInfo } from "@/lib/gcp";
+import { listServices, getQuickMetrics, PROJECTS, type Env, type ServiceInfo } from "@/lib/gcp";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/services?env=prod|dev|all
- * Returns all Cloud Run services with their status.
+ * Returns all Cloud Run services enriched with quick metrics.
  */
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -17,19 +17,34 @@ export async function GET(req: NextRequest) {
     envParam === "all" ? ["dev", "prod"] : [envParam as Env];
 
   try {
-    const results: ServiceInfo[] = [];
+    const results: (ServiceInfo & {
+      requestsPerMin?: number;
+      errorRate?: number;
+      latencyP50Ms?: number;
+      instanceCount?: number;
+      sparkline?: number[];
+    })[] = [];
+
     for (const env of envs) {
       if (!PROJECTS[env]) continue;
       const services = await listServices(env);
-      results.push(...services);
-    }
 
-    // Sort: unhealthy first, then by name
-    results.sort((a, b) => {
-      const statusOrder = { unhealthy: 0, unknown: 1, healthy: 2 };
-      const diff = statusOrder[a.status] - statusOrder[b.status];
-      return diff !== 0 ? diff : a.name.localeCompare(b.name);
-    });
+      // Fetch quick metrics for all services in parallel (batched)
+      const enriched = await Promise.all(
+        services.map(async (svc) => {
+          try {
+            const metrics = await getQuickMetrics(env, svc.name);
+            return { ...svc, ...metrics };
+          } catch (err: any) {
+            // Metrics may fail for new/inactive services — just return base data
+            console.warn(`[API /services] Metrics failed for ${env}/${svc.name}:`, err.message);
+            return { ...svc, requestsPerMin: 0, errorRate: 0, latencyP50Ms: 0, instanceCount: 0, sparkline: [] };
+          }
+        })
+      );
+
+      results.push(...enriched);
+    }
 
     return NextResponse.json({ services: results, count: results.length });
   } catch (err: any) {

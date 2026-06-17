@@ -78,22 +78,35 @@ export function ServiceCard({ data }: { data: ServiceCardData }) {
         <div className="sc-metric" title="Taux d'erreur">
           <AlertTriangle size={12} />
           <span
-            className={
-              (data.errorRate || 0) > 5
-                ? "text-red-500"
-                : (data.errorRate || 0) > 1
-                ? "text-amber-500"
-                : ""
-            }
+            style={{
+              color:
+                (data.errorRate || 0) > 5
+                  ? "#ef4444"
+                  : (data.errorRate || 0) > 1
+                  ? "#f59e0b"
+                  : "#10b981",
+              fontWeight: (data.errorRate || 0) > 5 ? 700 : 400,
+            }}
           >
             {data.errorRate != null ? `${data.errorRate}%` : "—"}
           </span>
         </div>
         <div className="sc-metric" title="Latence P50">
           <Clock size={12} />
-          <span>{data.latencyP50Ms != null ? `${data.latencyP50Ms}ms` : "—"}</span>
+          <span
+            style={{
+              color:
+                (data.latencyP50Ms || 0) > 3000
+                  ? "#ef4444"
+                  : (data.latencyP50Ms || 0) > 1000
+                  ? "#f59e0b"
+                  : undefined,
+            }}
+          >
+            {data.latencyP50Ms != null ? `${data.latencyP50Ms}ms` : "—"}
+          </span>
         </div>
-        <div className="sc-metric" title="Instances">
+        <div className="sc-metric" title="Instances actives">
           <Layers size={12} />
           <span>{data.instanceCount ?? "—"}</span>
         </div>
