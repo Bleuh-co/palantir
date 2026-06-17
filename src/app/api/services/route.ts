@@ -9,8 +9,14 @@ export const dynamic = "force-dynamic";
  * Returns all Cloud Run services enriched with quick metrics.
  */
 export async function GET(req: NextRequest) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  // Auth: session OR API key (for Apps Hub proxy)
+  const apiKey = req.headers.get("x-palantir-key");
+  const validApiKey = process.env.PALANTIR_API_KEY;
+
+  if (!apiKey || !validApiKey || apiKey !== validApiKey) {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
 
   const envParam = req.nextUrl.searchParams.get("env") || "all";
   const envs: Env[] =

@@ -705,6 +705,25 @@ h4 {
   gap: 8px;
 }
 
+.cloudrun-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #DDCBA4;
+  background: rgba(221, 203, 164, 0.08);
+  border: 1px solid rgba(221, 203, 164, 0.2);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.cloudrun-link:hover {
+  background: rgba(221, 203, 164, 0.15);
+  border-color: rgba(221, 203, 164, 0.4);
+}
+
 .period-toggle {
   display: inline-flex;
   background: var(--chanv-fibre);
