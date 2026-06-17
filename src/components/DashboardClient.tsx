@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { ServiceCard, type ServiceCardData } from "./ServiceCard";
 import { AlertBanner } from "./AlertBanner";
+import { SparkLine } from "./SparkLine";
 import {
   RefreshCw, Shield, Server, AlertTriangle, CheckCircle, Eye,
-  ArrowUpDown, ArrowUp, ArrowDown,
+  ArrowUpDown, ArrowUp, ArrowDown, Database,
 } from "lucide-react";
 
 type EnvFilter = "all" | "dev" | "prod";
@@ -87,11 +88,20 @@ interface AlertItem {
   createdAt: string;
 }
 
+interface FirestoreEnvData {
+  readsLastHour: number;
+  writesLastHour: number;
+  deletesLastHour: number;
+  readsPeak: number;
+  sparkline: number[];
+}
+
 export function DashboardClient() {
   const [envFilter, setEnvFilter] = useState<EnvFilter>("all");
   const [rawServices, setRawServices] = useState<ServiceCardData[]>([]);
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [firestore, setFirestore] = useState<Record<string, FirestoreEnvData>>({});
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -115,10 +125,11 @@ export function DashboardClient() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [svcRes, overviewRes, alertRes] = await Promise.all([
+      const [svcRes, overviewRes, alertRes, fsRes] = await Promise.all([
         fetch(`/api/services?env=${envFilter}`),
         fetch("/api/overview"),
         fetch("/api/alerts?status=active"),
+        fetch(`/api/firestore?env=${envFilter}&mode=quick`),
       ]);
 
       if (svcRes.ok) {
@@ -132,6 +143,10 @@ export function DashboardClient() {
       if (alertRes.ok) {
         const data = await alertRes.json();
         setAlerts(data.alerts || []);
+      }
+      if (fsRes.ok) {
+        const data = await fsRes.json();
+        setFirestore(data.firestore || {});
       }
       setLastRefresh(new Date());
     } catch (err) {
@@ -243,6 +258,66 @@ export function DashboardClient() {
           <Eye size={12} />
           Dernière mise à jour : {lastRefresh.toLocaleTimeString("fr-CA")}
         </p>
+      )}
+
+      {/* Firestore Usage Section */}
+      {Object.keys(firestore).length > 0 && (
+        <div className="firestore-section">
+          <h3 className="section-title">
+            <Database size={16} />
+            Firestore
+          </h3>
+          <div className="firestore-cards">
+            {Object.entries(firestore).map(([env, data]) => {
+              const readColor = data.readsLastHour > 1_000_000 ? "#ef4444"
+                : data.readsLastHour > 100_000 ? "#f59e0b" : "#10b981";
+              const writeColor = data.writesLastHour > 500_000 ? "#ef4444"
+                : data.writesLastHour > 50_000 ? "#f59e0b" : "#10b981";
+              return (
+                <div key={env} className="firestore-card">
+                  <div className="fs-card-header">
+                    <span className={`sc-env-badge sc-env-${env}`}>{env.toUpperCase()}</span>
+                  </div>
+                  <div className="fs-sparkline">
+                    <SparkLine
+                      data={data.sparkline || []}
+                      width={200}
+                      height={40}
+                      color={readColor}
+                      strokeWidth={1.5}
+                    />
+                  </div>
+                  <div className="fs-metrics">
+                    <div className="fs-metric">
+                      <span className="fs-metric-label">Lectures/h</span>
+                      <span className="fs-metric-value" style={{ color: readColor }}>
+                        {data.readsLastHour.toLocaleString("fr-CA")}
+                      </span>
+                    </div>
+                    <div className="fs-metric">
+                      <span className="fs-metric-label">Écritures/h</span>
+                      <span className="fs-metric-value" style={{ color: writeColor }}>
+                        {data.writesLastHour.toLocaleString("fr-CA")}
+                      </span>
+                    </div>
+                    <div className="fs-metric">
+                      <span className="fs-metric-label">Suppressions/h</span>
+                      <span className="fs-metric-value">
+                        {data.deletesLastHour.toLocaleString("fr-CA")}
+                      </span>
+                    </div>
+                    <div className="fs-metric">
+                      <span className="fs-metric-label">Pic lectures</span>
+                      <span className="fs-metric-value" style={{ color: data.readsPeak > 1_000_000 ? "#ef4444" : undefined }}>
+                        {data.readsPeak.toLocaleString("fr-CA")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Service Grid */}

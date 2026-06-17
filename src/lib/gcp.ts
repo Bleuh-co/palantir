@@ -284,3 +284,83 @@ export async function getQuickMetrics(
     sparkline: metrics.requestCount.slice(-24).map((p) => p.value),
   };
 }
+
+// ── Firestore Monitoring ────────────────────────────────────────────────
+
+export interface FirestoreMetrics {
+  reads: MetricPoint[];
+  writes: MetricPoint[];
+  deletes: MetricPoint[];
+}
+
+export interface FirestoreQuickMetrics {
+  readsLastHour: number;
+  writesLastHour: number;
+  deletesLastHour: number;
+  readsPeak: number;   // peak hourly reads (for anomaly context)
+  sparkline: number[]; // last data points for reads
+}
+
+/**
+ * Fetch Firestore document read/write/delete metrics from Cloud Monitoring.
+ * Uses metric: firestore.googleapis.com/document/read_count, write_count, delete_count
+ */
+export async function getFirestoreMetrics(
+  env: Env,
+  period: Period = "24h"
+): Promise<FirestoreMetrics> {
+  const projectId = PROJECTS[env].id;
+
+  const [reads, writes, deletes] = await Promise.all([
+    queryTimeSeries(
+      projectId,
+      `metric.type="firestore.googleapis.com/document/read_count"`,
+      period, "ALIGN_SUM", "REDUCE_SUM"
+    ),
+    queryTimeSeries(
+      projectId,
+      `metric.type="firestore.googleapis.com/document/write_count"`,
+      period, "ALIGN_SUM", "REDUCE_SUM"
+    ),
+    queryTimeSeries(
+      projectId,
+      `metric.type="firestore.googleapis.com/document/delete_count"`,
+      period, "ALIGN_SUM", "REDUCE_SUM"
+    ),
+  ]);
+
+  return { reads, writes, deletes };
+}
+
+/**
+ * Quick Firestore summary for dashboard cards.
+ */
+export async function getFirestoreQuickMetrics(
+  env: Env
+): Promise<FirestoreQuickMetrics> {
+  const metrics = await getFirestoreMetrics(env, "6h");
+
+  // Last hour = last few points
+  const lastHourReads = metrics.reads.length > 0
+    ? metrics.reads[metrics.reads.length - 1].value
+    : 0;
+  const lastHourWrites = metrics.writes.length > 0
+    ? metrics.writes[metrics.writes.length - 1].value
+    : 0;
+  const lastHourDeletes = metrics.deletes.length > 0
+    ? metrics.deletes[metrics.deletes.length - 1].value
+    : 0;
+
+  const readsPeak = metrics.reads.length > 0
+    ? Math.max(...metrics.reads.map((p) => p.value))
+    : 0;
+
+  return {
+    readsLastHour: lastHourReads,
+    writesLastHour: lastHourWrites,
+    deletesLastHour: lastHourDeletes,
+    readsPeak,
+    sparkline: metrics.reads.map((p) => p.value),
+  };
+}
+
