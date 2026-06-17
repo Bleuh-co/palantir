@@ -67,8 +67,9 @@ const SEVERITY_EMOJI: Record<string, string> = {
 };
 
 /**
- * Notify all admins about a new alert.
- * Looks up users with role superadmin or admin in Firestore.
+ * Notify Palantir Super Administrateurs about a new critical alert.
+ * Looks up users via user_app_roles collection (same as auth-server.ts).
+ * Also always includes bootstrap admins.
  */
 export async function notifyAlertToAdmins(alert: {
   service: string;
@@ -80,14 +81,46 @@ export async function notifyAlertToAdmins(alert: {
   const { adminDb } = await import("./firebase-admin");
   const db = adminDb();
 
-  // Get all admin emails from the users collection
-  const adminsSnap = await db
-    .collection("users")
-    .where("role", "in", ["Super Administrateur", "Administrateur"])
-    .get();
+  const BOOTSTRAP_ADMINS = ["t.matteucci@chanv.com", "mathieu@lafeuilleverte.ca"];
 
-  if (adminsSnap.empty) {
-    console.warn("[Notify] No admins found in users collection");
+  // Resolve Palantir app ID (same logic as auth-server.ts)
+  let palantirAppId = process.env.PALANTIR_APP_ID || "";
+  if (!palantirAppId) {
+    try {
+      const appsSnap = await db.collection("apps").get();
+      const match = appsSnap.docs.find((d: FirebaseFirestore.QueryDocumentSnapshot) => {
+        const name = (d.data().name || "").toLowerCase().replace(/\s+/g, "");
+        return name.includes("palantir");
+      });
+      palantirAppId = match?.id || "";
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Collect target emails: start with bootstrap admins
+  const targetEmails = new Set<string>(BOOTSTRAP_ADMINS);
+
+  // Query user_app_roles for Super Administrateur on Palantir
+  if (palantirAppId) {
+    try {
+      const rolesSnap = await db
+        .collection("user_app_roles")
+        .where("appId", "==", palantirAppId)
+        .where("role", "==", "Super Administrateur")
+        .get();
+
+      for (const doc of rolesSnap.docs) {
+        const email = doc.data().email;
+        if (email) targetEmails.add(email.toLowerCase());
+      }
+    } catch (e: unknown) {
+      console.warn("[Notify] user_app_roles query failed:", (e as Error).message);
+    }
+  }
+
+  if (targetEmails.size === 0) {
+    console.warn("[Notify] No Palantir Super Admins found");
     return 0;
   }
 
@@ -98,8 +131,7 @@ export async function notifyAlertToAdmins(alert: {
   const url = `/palantir/${alert.service}?env=${alert.env}`;
 
   let sent = 0;
-  for (const doc of adminsSnap.docs) {
-    const email = doc.data().email || doc.id;
+  for (const email of targetEmails) {
     const ok = await sendHubNotification({
       user_email: email,
       source: "palantir",
@@ -111,6 +143,6 @@ export async function notifyAlertToAdmins(alert: {
     if (ok) sent++;
   }
 
-  console.log(`[Notify] Alert sent to ${sent}/${adminsSnap.size} admins: ${title}`);
+  console.log(`[Notify] Alert sent to ${sent}/${targetEmails.size} Palantir Super Admins: ${title}`);
   return sent;
 }
