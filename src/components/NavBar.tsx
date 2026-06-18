@@ -11,7 +11,7 @@ export function NavBar() {
 
   return (
     <header className="chanv-header">
-      <div className="mx-auto max-w-5xl flex items-center gap-6 flex-nowrap relative flex-col md:flex-row text-center md:text-left">
+      <div className="mx-auto max-w-5xl flex items-center gap-4 sm:gap-6 flex-nowrap relative">
         <a
           href={process.env.NEXT_PUBLIC_HUB_URL || "https://chanv-apps-hub-fkdfx4bpva-nn.a.run.app/"}
           className="chanv-logo-wrapper flex items-center"
@@ -26,14 +26,14 @@ export function NavBar() {
             className="h-10 w-auto"
           />
         </a>
-        <div>
+        <div className="hidden sm:block">
           <h1 className="text-xl font-bold m-0 leading-tight">🔮 Palantir</h1>
           <p className="text-[10px] md:text-[11px] uppercase tracking-[3px] opacity-70 mt-1 m-0">
             Groupe Chanv
           </p>
         </div>
 
-        <div className="flex items-center gap-3 md:ml-auto absolute top-0 right-0 md:relative md:top-auto md:right-auto">
+        <div className="flex items-center gap-3 ml-auto">
           <div className="text-right hidden sm:block">
             <div className="text-sm font-semibold text-white whitespace-nowrap">
               {session.displayName || session.email}
