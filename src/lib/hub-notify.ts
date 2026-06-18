@@ -13,7 +13,11 @@ import "server-only";
 
 const HUB_URL =
   process.env.NEXT_PUBLIC_HUB_URL ||
-  "https://chanv-apps-hub-271227085398.northamerica-northeast1.run.app";
+  "https://chanv-apps-hub-fkdfx4bpva-nn.a.run.app";
+
+const PALANTIR_URL =
+  process.env.PALANTIR_URL ||
+  "https://palantir-271227085398.northamerica-northeast1.run.app";
 const NOTIF_KEY = process.env.NOTIF_API_KEY || "";
 
 interface NotifPayload {
@@ -128,7 +132,7 @@ export async function notifyAlertToAdmins(alert: {
   const envLabel = alert.env.toUpperCase();
   const title = `${emoji} Palantir — ${alert.service} [${envLabel}]`;
   const body = alert.message;
-  const url = `/palantir/${alert.service}?env=${alert.env}`;
+  const url = `${PALANTIR_URL}/?alert=${alert.type}&service=${alert.service}&env=${alert.env}`;
 
   let sent = 0;
   for (const email of targetEmails) {
