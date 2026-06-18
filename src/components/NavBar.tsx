@@ -11,7 +11,7 @@ export function NavBar() {
 
   return (
     <header className="chanv-header">
-      <div className="mx-auto max-w-5xl flex items-center gap-4 sm:gap-6 flex-nowrap relative">
+      <div className="mx-auto flex items-center gap-4 sm:gap-6 flex-nowrap relative" style={{ maxWidth: '1400px' }}>
         <a
           href={process.env.NEXT_PUBLIC_HUB_URL || "https://chanv-apps-hub-fkdfx4bpva-nn.a.run.app/"}
           className="chanv-logo-wrapper flex items-center"
