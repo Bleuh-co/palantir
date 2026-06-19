@@ -13,7 +13,7 @@ import "server-only";
 
 const HUB_URL =
   process.env.NEXT_PUBLIC_HUB_URL ||
-  "https://chanv-apps-hub-fkdfx4bpva-nn.a.run.app";
+  "https://chanv-apps-hub-271227085398.northamerica-northeast1.run.app";
 
 const PALANTIR_URL =
   process.env.PALANTIR_URL ||
