@@ -140,16 +140,21 @@ function computeStats(values: number[]): { mean: number; stddev: number } {
 
 /**
  * Recompute the baseline for a specific service using the last 7 days of snapshots.
+ * IMPORTANT: Only uses ACTIVE snapshots (requests > 0) to avoid idle periods
+ * (nighttime, weekends) from polluting the baseline with zeros.
  */
 export async function recomputeBaseline(
   service: string,
   env: Env
 ): Promise<BaselineStats | null> {
-  const snapshots = await getSnapshots(service, env, BASELINE_WINDOW_DAYS);
+  const allSnapshots = await getSnapshots(service, env, BASELINE_WINDOW_DAYS);
+
+  // Filter out idle periods — only compute baseline from active usage
+  const snapshots = allSnapshots.filter((s) => s.requests > 0);
 
   if (snapshots.length < MIN_SAMPLES_FOR_BASELINE) {
     console.log(
-      `[Baseline] ${env}/${service}: Only ${snapshots.length} samples (need ${MIN_SAMPLES_FOR_BASELINE}). Skipping.`
+      `[Baseline] ${env}/${service}: Only ${snapshots.length} active samples out of ${allSnapshots.length} total (need ${MIN_SAMPLES_FOR_BASELINE}). Skipping.`
     );
     return null;
   }
@@ -207,14 +212,22 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 /**
- * Compare current metrics against the baseline.
- * Returns anomalies (values > baseline + 2σ).
+ * Compare current metrics against the baseline (active-hours only).
+ * Returns anomalies (values > baseline + Nσ).
+ *
+ * Handles cold starts: if service was idle (0 requests) and just woke up,
+ * latency/error spikes are expected and ignored.
  */
 export function detectAnomalies(
   current: MetricSnapshot,
   baseline: BaselineStats
 ): Anomaly[] {
   const anomalies: Anomaly[] = [];
+
+  // If service has very few requests, latency & error metrics are unreliable
+  // (cold start penalty, single-request amplification). Skip those.
+  const isColdStart = current.requests > 0 && current.requests < 5;
+
   const metricsToCheck: (keyof Pick<
     BaselineStats,
     "requests" | "errors" | "errorRate" | "latencyP50" | "latencyP99" | "instances"
@@ -226,6 +239,11 @@ export function detectAnomalies(
 
     // Skip metrics with no variance (always 0)
     if (stats.mean === 0 && stats.stddev === 0) continue;
+
+    // Skip latency/error metrics during cold starts (unreliable)
+    if (isColdStart && ["latencyP50", "latencyP99", "errorRate", "errors"].includes(metric)) {
+      continue;
+    }
 
     // Calculate how many standard deviations above the mean
     const stddev = Math.max(stats.stddev, stats.mean * 0.1); // floor stddev at 10% of mean
