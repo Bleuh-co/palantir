@@ -210,8 +210,14 @@ export async function POST(req: NextRequest) {
             trackOp(3); // isPatternAcked + checkExisting + write
             totalAnomalies++;
 
-            // Push notification: ONLY for critical + PROD + with 2h cooldown
-            if (anomaly.severity === "critical" && s.svc.env === "prod") {
+            // Push notification rules with 2h cooldown:
+            //  - PROD: critical (≥4σ)
+            //  - DEV:  only extreme anomalies (≥6σ) — real meltdowns
+            const shouldPush =
+              (s.svc.env === "prod" && anomaly.severity === "critical") ||
+              (s.svc.env === "dev" && anomaly.deviations >= 6);
+
+            if (shouldPush) {
               const cooldownKey = `${s.svc.env}_${s.svc.name}_${anomaly.metric}`;
               const shouldNotify = await checkNotifCooldown(cooldownKey, now);
 
