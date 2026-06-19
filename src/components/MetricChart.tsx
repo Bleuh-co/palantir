@@ -42,12 +42,16 @@ function SVGLineChart({
   thresholdLine,
   thresholdLabel,
 }: {
-  datasets: { points: { x: number; y: number }[]; color: string; label: string }[];
+  datasets: { points: { x: number; y: number; label?: string }[]; color: string; label: string }[];
   width?: number;
   height?: number;
   thresholdLine?: number;
   thresholdLabel?: string;
 }) {
+  const [tooltip, setTooltip] = useState<{
+    x: number; y: number; lines: string[];
+  } | null>(null);
+
   const padding = { top: 30, right: 20, bottom: 40, left: 60 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
@@ -83,14 +87,27 @@ function SVGLineChart({
     return d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" });
   };
 
+  const formatTimeFull = (ts: number) => {
+    const d = new Date(ts);
+    return d.toLocaleDateString("fr-CA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  };
+
   const formatY = (v: number) => {
     if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
     if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
     return v.toFixed(v < 10 ? 2 : 0);
   };
 
+  const formatYFull = (v: number) => {
+    return v.toLocaleString("fr-CA", { maximumFractionDigits: 2 });
+  };
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="metric-chart-svg">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="metric-chart-svg"
+      onMouseLeave={() => setTooltip(null)}
+    >
       {/* Grid lines */}
       {yTicks.map((v, i) => (
         <g key={`y-${i}`}>
@@ -138,7 +155,7 @@ function SVGLineChart({
         </g>
       )}
 
-      {/* Data lines */}
+      {/* Data lines + area fill + interactive points */}
       {datasets.map((ds, di) => {
         if (ds.points.length < 2) return null;
         const pathD = ds.points
@@ -163,9 +180,84 @@ function SVGLineChart({
             >
               {ds.label}
             </text>
+            {/* Interactive hover points */}
+            {ds.points.map((p, pi) => (
+              <circle
+                key={pi}
+                cx={scaleX(p.x)}
+                cy={scaleY(p.y)}
+                r={tooltip?.x === p.x && tooltip?.lines[0]?.includes(ds.label) ? 5 : 3}
+                fill={ds.color}
+                stroke="rgba(17,24,39,0.8)"
+                strokeWidth={1.5}
+                opacity={tooltip?.x === p.x && tooltip?.lines[0]?.includes(ds.label) ? 1 : 0}
+                style={{ cursor: "crosshair", transition: "r 0.1s, opacity 0.1s" }}
+                onMouseEnter={() =>
+                  setTooltip({
+                    x: p.x,
+                    y: p.y,
+                    lines: [`${ds.label}: ${formatYFull(p.y)}`, formatTimeFull(p.x)],
+                  })
+                }
+              />
+            ))}
+            {/* Invisible hit-area circles (larger, for easier hover) */}
+            {ds.points.map((p, pi) => (
+              <circle
+                key={`hit-${pi}`}
+                cx={scaleX(p.x)}
+                cy={scaleY(p.y)}
+                r={12}
+                fill="transparent"
+                style={{ cursor: "crosshair" }}
+                onMouseEnter={() =>
+                  setTooltip({
+                    x: p.x,
+                    y: p.y,
+                    lines: [`${ds.label}: ${formatYFull(p.y)}`, formatTimeFull(p.x)],
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              />
+            ))}
           </g>
         );
       })}
+
+      {/* Tooltip */}
+      {tooltip && (() => {
+        const tx = scaleX(tooltip.x);
+        const ty = scaleY(tooltip.y);
+        const tooltipW = 180;
+        const tooltipH = 44;
+        // Keep tooltip inside the chart
+        const tooltipX = Math.min(Math.max(tx - tooltipW / 2, padding.left), width - padding.right - tooltipW);
+        const tooltipY = ty - tooltipH - 12;
+        return (
+          <g>
+            {/* Vertical guideline */}
+            <line
+              x1={tx} y1={padding.top}
+              x2={tx} y2={padding.top + chartH}
+              stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="3,3"
+            />
+            {/* Dot highlight */}
+            <circle cx={tx} cy={ty} r={5} fill="#fff" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+            {/* Tooltip box */}
+            <rect
+              x={tooltipX} y={tooltipY}
+              width={tooltipW} height={tooltipH}
+              rx={6} fill="rgba(17,24,39,0.95)" stroke="rgba(255,255,255,0.15)" strokeWidth={1}
+            />
+            <text x={tooltipX + 10} y={tooltipY + 18} fill="#fff" fontSize={12} fontWeight="600">
+              {tooltip.lines[0]}
+            </text>
+            <text x={tooltipX + 10} y={tooltipY + 34} fill="rgba(255,255,255,0.5)" fontSize={10}>
+              {tooltip.lines[1]}
+            </text>
+          </g>
+        );
+      })()}
 
       {/* Empty state */}
       {datasets.every((d) => d.points.length === 0) && (
@@ -183,7 +275,7 @@ function SVGLineChart({
 // ── Main Component ───────────────────────────────────────────────────
 
 export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChartProps) {
-  const [range, setRange] = useState<Range>("7d");
+  const [range, setRange] = useState<Range>("24h");
   const [loading, setLoading] = useState(true);
   const [budgetPoints, setBudgetPoints] = useState<BudgetPoint[]>([]);
   const [firestoreData, setFirestoreData] = useState<FirestoreChartData | null>(null);
