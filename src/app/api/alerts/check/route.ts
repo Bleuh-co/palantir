@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { listServices, getServiceMetrics, PROJECTS, type Env } from "@/lib/gcp";
 import { createAlert, cleanupOldAlerts } from "@/lib/alerts";
 import { notifyAlertToAdmins } from "@/lib/hub-notify";
+import { adminDb } from "@/lib/firebase-admin";
 import {
   storeSnapshot,
   getBaseline,
@@ -22,6 +23,8 @@ const MAX_FIRESTORE_OPS_PER_RUN = 500;     // absolute max Firestore reads+write
 const MAX_SERVICES_PER_RUN = 20;           // only check top N most active services (not all 43!)
 const MIN_REQUESTS_TO_MONITOR = 1;         // skip services with 0 requests (idle = no point)
 
+const NOTIF_COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2 hours between notifications for same alert
+
 let _firestoreOpsCounter = 0;
 
 function trackOp(count: number = 1): void {
@@ -34,16 +37,43 @@ function trackOp(count: number = 1): void {
 }
 
 /**
+ * Check if a notification can be sent (2h cooldown per service+metric).
+ * Returns true if we should send, false if still in cooldown.
+ */
+async function checkNotifCooldown(key: string, now: Date): Promise<boolean> {
+  const db = adminDb();
+  const ref = db.collection("palantir_notif_cooldown").doc(key);
+  const doc = await ref.get();
+  trackOp(1);
+
+  if (doc.exists) {
+    const lastSent = doc.data()?.lastSentAt;
+    if (lastSent) {
+      const elapsed = now.getTime() - new Date(lastSent).getTime();
+      if (elapsed < NOTIF_COOLDOWN_MS) {
+        return false; // still in cooldown
+      }
+    }
+  }
+
+  // Record this notification
+  await ref.set({ lastSentAt: now.toISOString() });
+  trackOp(1);
+  return true;
+}
+
+/**
  * POST /api/alerts/check
  *
- * CRON endpoint (every 15 min) — optimized to prevent billing spikes:
+ * CRON endpoint (every 30 min) — optimized to prevent billing spikes:
  *  1. Fetch Cloud Monitoring metrics (free — GCP API, not Firestore)
  *  2. Only process top N active services (skip idle ones)
  *  3. Circuit breaker: abort if Firestore ops exceed hard limit
  *  4. Store snapshot + check anomalies (tracked Firestore ops)
- *  5. Firestore usage monitoring (via Cloud Monitoring API — free)
- *  6. Every 6h → recompute baselines (tracked)
- *  7. Once/day → cleanup old data (tracked)
+ *  5. Push notifications: PROD only, critical only, 2h cooldown
+ *  6. Firestore usage monitoring (via Cloud Monitoring API — free)
+ *  7. Every 6h → recompute baselines (tracked)
+ *  8. Once/day → cleanup old data (tracked)
  */
 export async function POST(req: NextRequest) {
   // Auth
@@ -180,22 +210,30 @@ export async function POST(req: NextRequest) {
             trackOp(3); // isPatternAcked + checkExisting + write
             totalAnomalies++;
 
-            if (anomaly.severity === "critical") {
-              try {
-                const sent = await notifyAlertToAdmins({
-                  service: s.svc.name,
-                  env: s.svc.env,
-                  severity: anomaly.severity,
-                  message:
-                    `${anomaly.label}: ${anomaly.currentValue} ` +
-                    `(baseline: ${anomaly.baselineMean} ± ${anomaly.baselineStddev}, ` +
-                    `${anomaly.deviations}σ au-dessus)`,
-                  type: `anomaly_${anomaly.metric}`,
-                });
-                trackOp(2); // user_app_roles query + apps query
-                notificationsSent += sent;
-              } catch (notifErr: any) {
-                console.warn(`[CRON] Notification failed:`, notifErr.message);
+            // Push notification: ONLY for critical + PROD + with 2h cooldown
+            if (anomaly.severity === "critical" && s.svc.env === "prod") {
+              const cooldownKey = `${s.svc.env}_${s.svc.name}_${anomaly.metric}`;
+              const shouldNotify = await checkNotifCooldown(cooldownKey, now);
+
+              if (shouldNotify) {
+                try {
+                  const sent = await notifyAlertToAdmins({
+                    service: s.svc.name,
+                    env: s.svc.env,
+                    severity: anomaly.severity,
+                    message:
+                      `${anomaly.label}: ${anomaly.currentValue} ` +
+                      `(baseline: ${anomaly.baselineMean} ± ${anomaly.baselineStddev}, ` +
+                      `${anomaly.deviations}σ au-dessus)`,
+                    type: `anomaly_${anomaly.metric}`,
+                  });
+                  trackOp(2); // user_app_roles query + apps query
+                  notificationsSent += sent;
+                } catch (notifErr: any) {
+                  console.warn(`[CRON] Notification failed:`, notifErr.message);
+                }
+              } else {
+                console.log(`[CRON] Notification skipped (cooldown): ${cooldownKey}`);
               }
             }
           }

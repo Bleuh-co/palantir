@@ -60,8 +60,8 @@ const COLLECTION_SNAPSHOTS = "palantir_snapshots";
 const COLLECTION_BASELINES = "palantir_baselines";
 const BASELINE_WINDOW_DAYS = 7;
 const MIN_SAMPLES_FOR_BASELINE = 12; // ~12 hours of data minimum
-const WARNING_SIGMA = 2; // 2σ = warning
-const CRITICAL_SIGMA = 3; // 3σ = critical
+const WARNING_SIGMA = 3; // 3σ = warning
+const CRITICAL_SIGMA = 4; // 4σ = critical (push notification threshold)
 
 // ── Snapshot Storage ──────────────────────────────────────────────────
 
