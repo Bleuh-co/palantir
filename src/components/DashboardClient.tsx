@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { ServiceCard, type ServiceCardData } from "./ServiceCard";
 import { AlertBanner } from "./AlertBanner";
 import { SparkLine } from "./SparkLine";
+import { MetricChart } from "./MetricChart";
 import {
   RefreshCw, Shield, Server, AlertTriangle, CheckCircle, Eye,
   ArrowUpDown, ArrowUp, ArrowDown, Database, DollarSign,
@@ -114,6 +115,7 @@ export function DashboardClient() {
   const [budgets, setBudgets] = useState<Record<string, BudgetData>>({});
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [chartOpen, setChartOpen] = useState<{ type: "budget" | "firestore"; key: string } | null>(null);
 
   const [sortField, setSortField] = useState<SortField>("requests");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -173,7 +175,7 @@ export function DashboardClient() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60000);
+    const interval = setInterval(fetchData, 300000); // 5 min — GCP metrics refresh ~5min
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -288,7 +290,7 @@ export function DashboardClient() {
                   const barColor = b.pct >= 100 ? "#ef4444" : b.pct >= 80 ? "#f59e0b" : "#10b981";
                   const displayName = key.replace(/^budget-/, "").replace(/-/g, " ");
                   return (
-                    <div key={key} className="billing-card">
+                    <div key={key} className="billing-card billing-card-clickable" onClick={() => setChartOpen({ type: "budget", key })}>
                       <div className="billing-header">
                         <span className="billing-name">{displayName}</span>
                         <span className="billing-pct" style={{ color: barColor }}>{b.pct}%</span>
@@ -339,7 +341,7 @@ export function DashboardClient() {
                   const writeColor = data.writesLastHour > 500_000 ? "#ef4444"
                     : data.writesLastHour > 50_000 ? "#f59e0b" : "#10b981";
                   return (
-                    <div key={env} className="firestore-card">
+                    <div key={env} className="firestore-card firestore-card-clickable" onClick={() => setChartOpen({ type: "firestore", key: env })}>
                       <div className="fs-card-header">
                         <span className={`sc-env-badge sc-env-${env}`}>{env.toUpperCase()}</span>
                       </div>
@@ -407,6 +409,16 @@ export function DashboardClient() {
           <Server size={48} strokeWidth={1} />
           <p>Aucun service trouvé</p>
         </div>
+      )}
+
+      {/* Chart Modal */}
+      {chartOpen && (
+        <MetricChart
+          type={chartOpen.type}
+          chartKey={chartOpen.key}
+          budgetData={chartOpen.type === "budget" ? budgets[chartOpen.key] : undefined}
+          onClose={() => setChartOpen(null)}
+        />
       )}
     </div>
   );

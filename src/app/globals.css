@@ -1223,3 +1223,153 @@ a.status-pill:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft
   .detail-header { flex-direction: column; align-items: flex-start; }
 }
 
+/* ── Clickable Cards ─────────────────────────────────────────────── */
+.billing-card-clickable,
+.firestore-card-clickable {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.billing-card-clickable:hover,
+.firestore-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  border-color: rgba(139,92,246,0.4);
+}
+
+/* ── MetricChart Modal ───────────────────────────────────────────── */
+.metric-chart-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: mc-fadeIn 0.2s ease;
+}
+@keyframes mc-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.metric-chart-modal {
+  background: #1a1a2e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  width: min(90vw, 800px);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  animation: mc-slideUp 0.25s ease;
+}
+@keyframes mc-slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.metric-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.metric-chart-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+.metric-chart-title-row h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.metric-chart-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.metric-chart-close:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+}
+
+.metric-chart-summary {
+  display: flex;
+  gap: 24px;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.metric-chart-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.metric-chart-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.4);
+}
+.metric-chart-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.metric-chart-ranges {
+  display: flex;
+  gap: 6px;
+  padding: 12px 24px;
+}
+.metric-chart-range-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.metric-chart-range-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.metric-chart-range-btn.active {
+  background: rgba(139,92,246,0.2);
+  border-color: rgba(139,92,246,0.5);
+  color: #a78bfa;
+}
+
+.metric-chart-body {
+  padding: 16px 24px 24px;
+}
+.metric-chart-svg {
+  width: 100%;
+  height: auto;
+}
+.metric-chart-loading {
+  text-align: center;
+  color: rgba(255,255,255,0.3);
+  padding: 60px 0;
+  font-size: 14px;
+}
+.metric-chart-info {
+  text-align: center;
+  color: rgba(255,255,255,0.3);
+  font-size: 12px;
+  padding: 0 24px 20px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .metric-chart-modal { width: 95vw; }
+  .metric-chart-summary { flex-wrap: wrap; gap: 12px; }
+}
