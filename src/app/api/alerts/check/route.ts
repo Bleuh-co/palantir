@@ -359,6 +359,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── Phase 4b: Budget history snapshot (1 read + N writes — lightweight) ──
+    let budgetSnapshots = 0;
+    if (!circuitBroken) {
+      try {
+        const db = adminDb();
+        const budgetState = await db.collection("palantir_budget_state").get();
+        trackOp(1);
+
+        const hourKey = now.toISOString().slice(0, 13).replace(/[^0-9]/g, ""); // YYYYMMDDHH
+
+        for (const doc of budgetState.docs) {
+          const d = doc.data();
+          const cost = d.lastCostAmount || 0;
+          const budget = d.budgetAmount || 0;
+          if (cost === 0 && budget === 0) continue; // skip empty budgets
+
+          const pct = budget > 0 ? Math.round((cost / budget) * 100) : 0;
+          await db.collection("palantir_budget_history").doc(`${doc.id}_${hourKey}`).set({
+            budgetKey: doc.id,
+            cost,
+            budget,
+            currency: d.currencyCode || "CAD",
+            pct,
+            timestamp: now.toISOString(),
+          });
+          trackOp(1);
+          budgetSnapshots++;
+        }
+
+        if (budgetSnapshots > 0) {
+          console.log(`[CRON] Budget history: ${budgetSnapshots} snapshot(s) stored`);
+        }
+      } catch (budgetErr: any) {
+        console.warn(`[CRON] Budget history failed:`, budgetErr.message);
+      }
+    }
+
     // ── Phase 5: Cleanup (nightly, tracked) ──
     let cleanedSnapshots = 0;
     let cleanedAlerts = 0;
@@ -387,6 +424,7 @@ export async function POST(req: NextRequest) {
       firestoreAlerts,
       notificationsSent,
       baselinesUpdated,
+      budgetSnapshots,
       firestoreOps: _firestoreOpsCounter,
       firestoreOpsLimit: MAX_FIRESTORE_OPS_PER_RUN,
       circuitBroken,
