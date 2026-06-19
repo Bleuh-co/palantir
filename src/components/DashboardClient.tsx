@@ -205,12 +205,10 @@ export function DashboardClient() {
               <span>{totalUnhealthy} erreur{totalUnhealthy > 1 ? "s" : ""}</span>
             </div>
           )}
-          {overview && overview.alerts.active > 0 && (
-            <div className="status-pill status-pill-alert">
-              <Shield size={14} />
-              <span>{overview.alerts.active} alerte{overview.alerts.active > 1 ? "s" : ""}</span>
-            </div>
-          )}
+          <a href="/alertes" className={`status-pill ${overview && overview.alerts.active > 0 ? "status-pill-alert" : "status-pill-neutral"}`} style={{ textDecoration: "none" }}>
+            <Shield size={14} />
+            <span>{overview?.alerts.active || 0} alerte{(overview?.alerts.active || 0) !== 1 ? "s" : ""}</span>
+          </a>
           <div className="status-pill status-pill-total">
             <Server size={14} />
             <span>{totalServices} services</span>
