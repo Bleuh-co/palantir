@@ -228,6 +228,21 @@ export function detectAnomalies(
   // (cold start penalty, single-request amplification). Skip those.
   const isColdStart = current.requests > 0 && current.requests < 5;
 
+  // DEV: only flag extreme anomalies (6σ+) to reduce noise
+  const envWarningSigma = current.env === "dev" ? 6 : WARNING_SIGMA;
+  const envCriticalSigma = current.env === "dev" ? 8 : CRITICAL_SIGMA;
+
+  // Minimum σ floors per metric to prevent math artifacts
+  // (e.g., instances: 1 → 2 should NOT be 10σ when σ=0)
+  const STDDEV_FLOOR: Record<string, number> = {
+    requests: 10,
+    errors: 2,
+    errorRate: 5,
+    latencyP50: 100,
+    latencyP99: 200,
+    instances: 2,
+  };
+
   const metricsToCheck: (keyof Pick<
     BaselineStats,
     "requests" | "errors" | "errorRate" | "latencyP50" | "latencyP99" | "instances"
@@ -246,10 +261,12 @@ export function detectAnomalies(
     }
 
     // Calculate how many standard deviations above the mean
-    const stddev = Math.max(stats.stddev, stats.mean * 0.1); // floor stddev at 10% of mean
+    // Use a meaningful floor to avoid math artifacts (σ=0 → infinite deviations)
+    const floor = STDDEV_FLOOR[metric] || stats.mean * 0.1;
+    const stddev = Math.max(stats.stddev, floor);
     const deviations = stddev > 0 ? (value - stats.mean) / stddev : 0;
 
-    if (deviations >= WARNING_SIGMA) {
+    if (deviations >= envWarningSigma) {
       anomalies.push({
         metric,
         label: METRIC_LABELS[metric] || metric,
@@ -257,7 +274,7 @@ export function detectAnomalies(
         baselineMean: stats.mean,
         baselineStddev: stats.stddev,
         deviations: Math.round(deviations * 10) / 10,
-        severity: deviations >= CRITICAL_SIGMA ? "critical" : "warning",
+        severity: deviations >= envCriticalSigma ? "critical" : "warning",
       });
     }
   }

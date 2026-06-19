@@ -201,8 +201,8 @@ export async function POST(req: NextRequest) {
               status: "active",
               message:
                 `${anomaly.label}: ${anomaly.currentValue} ` +
-                `(baseline: ${anomaly.baselineMean} ± ${anomaly.baselineStddev}, ` +
-                `${anomaly.deviations}σ au-dessus)`,
+                `(normale: ${Math.round(anomaly.baselineMean)}, ` +
+                `${anomaly.deviations}× au-dessus)`,
               value: anomaly.currentValue,
               threshold: anomaly.baselineMean + anomaly.baselineStddev * 2,
               createdAt: now.toISOString(),
@@ -229,8 +229,8 @@ export async function POST(req: NextRequest) {
                     severity: anomaly.severity,
                     message:
                       `${anomaly.label}: ${anomaly.currentValue} ` +
-                      `(baseline: ${anomaly.baselineMean} ± ${anomaly.baselineStddev}, ` +
-                      `${anomaly.deviations}σ au-dessus)`,
+                      `(normale: ${Math.round(anomaly.baselineMean)}, ` +
+                      `${anomaly.deviations}× au-dessus)`,
                     type: `anomaly_${anomaly.metric}`,
                   });
                   trackOp(2); // user_app_roles query + apps query
