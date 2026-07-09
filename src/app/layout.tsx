@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import { Toaster } from "sonner";
 import Script from "next/script";
+import { headers } from "next/headers";
+import { GandalfProvider } from "@bleuh-co/gandalf-sdk-next/client";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 
@@ -32,14 +34,21 @@ export const viewport = {
   viewportFit: "cover" as const,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Contexte d'embarquement Gandalf, posé par le middleware (x-gandalf-*).
+  const h = await headers();
+  const embedded = h.get("x-gandalf-embedded") === "1";
+  const lang = h.get("x-gandalf-lang") || "fr";
+  const theme = h.get("x-gandalf-theme") || "light";
   return (
-    <html lang="fr" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang={lang} className={`${inter.variable} ${outfit.variable}${theme === "dark" ? " gandalf-dark" : ""}`}>
       <body className="min-h-screen antialiased font-sans">
-        <AuthProvider>
-          {children}
-          <Toaster richColors position="top-right" />
-        </AuthProvider>
+        <GandalfProvider embedded={embedded} lang={lang} theme={theme}>
+          <AuthProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </AuthProvider>
+        </GandalfProvider>
         {/* Hub Widgets */}
         <Script id="chanv-auth-bridge" strategy="beforeInteractive">{`
           window.getAuthToken = async function() {

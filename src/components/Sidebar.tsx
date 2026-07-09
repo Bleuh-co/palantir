@@ -2,6 +2,8 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { useAuth } from "./AuthProvider";
+import { useGandalf } from "@bleuh-co/gandalf-sdk-next/client";
+import { useT } from "@/lib/i18n";
 import { ROLE_LABELS } from "@/lib/types";
 
 const HUB_URL = process.env.NEXT_PUBLIC_HUB_URL || "https://chanv-apps-hub-271227085398.northamerica-northeast1.run.app";
@@ -13,17 +15,18 @@ const HUB_URL = process.env.NEXT_PUBLIC_HUB_URL || "https://chanv-apps-hub-27122
  * with user info + app-specific navigation links.
  */
 export function Sidebar() {
+  const { embedded } = useGandalf();
   const { session, firebaseUser, signOut } = useAuth();
+  const t = useT();
 
-  const isAdmin = session?.role === "admin" || session?.role === "superadmin";
-
-  // Build app-specific links for the widget
+  // Build app-specific links for the widget — tous les liens de l'app
   const getLinks = useCallback(() => {
     const links: Array<{ label: string; icon: string; href: string; mobileOnly?: boolean }> = [
-      { label: "Palantir", icon: "🚀", href: "/palantir", mobileOnly: true },
+      { label: t("nav.dashboard"), icon: "🔮", href: "/palantir", mobileOnly: true },
+      { label: t("nav.alerts"), icon: "🛡️", href: "/palantir/alerts", mobileOnly: true },
     ];
     return links;
-  }, [isAdmin]);
+  }, [t]);
 
   // Initialize GANDALF widget once session is ready
   const initDone = useRef(false);
@@ -89,14 +92,14 @@ export function Sidebar() {
     firebaseUser.getIdToken().then((t: string) => gw.setToken(t)).catch(() => {});
   }, [firebaseUser]);
 
-  if (!session) return null;
+  if (!session || embedded) return null; // en mode embarqué, le shell fournit le menu
 
   return (
     <button
       id="avatar-burger-btn"
       onClick={() => (window as any).GandalfWidget?.toggle()}
       className="avatar-burger-btn relative"
-      title="Menu"
+      title={t("nav.menu")}
     >
       <div className="avatar-burger-inner">
         {session.photoURL && (

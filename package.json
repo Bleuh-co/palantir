@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@bleuh-co/gandalf-sdk-next": "^0.2.3",
     "@google-cloud/monitoring": "^5.3.3",
     "@google-cloud/run": "^3.3.0",
     "clsx": "^2.1.1",

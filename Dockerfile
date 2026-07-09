@@ -3,8 +3,11 @@
 
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json ./
-RUN npm install --no-audit --no-fund
+# .npmrc pointe @bleuh-co vers GitHub Packages ; le token est injecté en secret de build (jamais gravé).
+COPY package.json package-lock.json* .npmrc ./
+RUN --mount=type=secret,id=gh_token \
+    GITHUB_PACKAGES_TOKEN="$(cat /run/secrets/gh_token 2>/dev/null)" \
+    npm ci --no-audit --no-fund
 
 FROM node:20-alpine AS builder
 WORKDIR /app

@@ -10,6 +10,7 @@ import {
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
+import { useT, useLocale } from "@/lib/i18n";
 
 interface MetricPoint {
   time: string;
@@ -36,14 +37,12 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "7d", label: "7j" },
 ];
 
-function formatTime(isoStr: string, period: Period) {
+function formatTime(isoStr: string, period: Period, locale: string) {
   const d = new Date(isoStr);
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   if (period === "7d") {
-    const dd = String(d.getDate()).padStart(2, "0");
-    const months = ["jan", "fév", "mar", "avr", "mai", "jun", "jul", "aoû", "sep", "oct", "nov", "déc"];
-    return `${dd} ${months[d.getMonth()]}`;
+    return d.toLocaleDateString(locale, { day: "2-digit", month: "short" });
   }
   return `${hh}:${mm}`;
 }
@@ -54,15 +53,19 @@ function MetricChart({
   color,
   unit,
   period,
+  locale,
+  emptyLabel,
 }: {
   title: string;
   data: MetricPoint[];
   color: string;
   unit: string;
   period: Period;
+  locale: string;
+  emptyLabel: string;
 }) {
   const chartData = data.map((p) => ({
-    time: formatTime(p.time, period),
+    time: formatTime(p.time, period, locale),
     value: Math.round(p.value * 100) / 100,
   }));
 
@@ -70,7 +73,7 @@ function MetricChart({
     <div className="metric-chart-card">
       <h3 className="metric-chart-title">{title}</h3>
       {chartData.length === 0 ? (
-        <div className="metric-chart-empty">Pas de données</div>
+        <div className="metric-chart-empty">{emptyLabel}</div>
       ) : (
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -118,6 +121,8 @@ function MetricChart({
 }
 
 export default function ServiceDetailPage() {
+  const t = useT();
+  const locale = useLocale();
   const params = useParams();
   const searchParams = useSearchParams();
   const name = params.name as string;
@@ -158,7 +163,7 @@ export default function ServiceDetailPage() {
         <div className="detail-breadcrumb">
           <Link href="/palantir" className="detail-back">
             <ArrowLeft size={16} />
-            Dashboard
+            {t("detail.dashboard")}
           </Link>
           <span className="detail-sep">/</span>
           <span className="detail-current">{displayName}</span>
@@ -174,10 +179,10 @@ export default function ServiceDetailPage() {
               target="_blank"
               rel="noopener noreferrer"
               className="cloudrun-link"
-              title="Ouvrir dans Google Cloud Run Console"
+              title={t("detail.cloudRunTitle")}
             >
               <ExternalLink size={14} />
-              Cloud Run
+              {t("detail.cloudRun")}
             </a>
             <div className="period-toggle">
               {PERIODS.map((p) => (
@@ -202,68 +207,84 @@ export default function ServiceDetailPage() {
 
         {/* Charts Grid */}
         {loading && !metrics ? (
-          <div className="charts-loading">Chargement des métriques...</div>
+          <div className="charts-loading">{t("detail.loading")}</div>
         ) : metrics ? (
           <div className="charts-grid">
             <MetricChart
-              title="Requêtes"
+              title={t("detail.requests")}
               data={metrics.requestCount}
               color="#DDCBA4"
               unit="req"
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
             <MetricChart
-              title="Erreurs (5xx)"
+              title={t("detail.errors5xx")}
               data={metrics.errorCount}
               color="#ef4444"
               unit="err"
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
             <MetricChart
-              title="Latence P50"
+              title={t("detail.latencyP50")}
               data={metrics.latencyP50}
               color="#3b82f6"
               unit="ms"
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
             <MetricChart
-              title="Latence P99"
+              title={t("detail.latencyP99")}
               data={metrics.latencyP99}
               color="#8b5cf6"
               unit="ms"
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
             <MetricChart
-              title="Instances"
+              title={t("detail.instances")}
               data={metrics.instanceCount}
               color="#10b981"
               unit=""
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
             <MetricChart
-              title="CPU (P99)"
+              title={t("detail.cpuP99")}
               data={(metrics.cpuUtilization || []).map(p => ({ ...p, value: p.value * 100 }))}
               color="#f59e0b"
               unit="%"
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
             <MetricChart
-              title="Mémoire (P99)"
+              title={t("detail.memoryP99")}
               data={(metrics.memoryUtilization || []).map(p => ({ ...p, value: p.value * 100 }))}
               color="#ec4899"
               unit="%"
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
             <MetricChart
-              title="Temps facturable"
+              title={t("detail.billableTime")}
               data={metrics.billableTime || []}
               color="#6366f1"
               unit="s"
               period={period}
+              locale={locale}
+              emptyLabel={t("detail.chartEmpty")}
             />
           </div>
         ) : (
-          <div className="charts-loading">Aucune donnée disponible</div>
+          <div className="charts-loading">{t("detail.noData")}</div>
         )}
       </main>
     </>

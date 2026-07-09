@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SparkLine } from "./SparkLine";
 import { Activity, AlertTriangle, Clock, Layers, Cpu, HardDrive } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 export interface ServiceCardData {
   name: string;
@@ -22,12 +23,13 @@ export interface ServiceCardData {
 }
 
 const STATUS_CONFIG = {
-  healthy: { color: "#10b981", bg: "rgba(16,185,129,0.08)", label: "OK", dot: "🟢" },
-  unhealthy: { color: "#ef4444", bg: "rgba(239,68,68,0.08)", label: "Erreur", dot: "🔴" },
-  unknown: { color: "#f59e0b", bg: "rgba(245,158,11,0.08)", label: "Inconnu", dot: "🟡" },
+  healthy: { color: "#10b981", bg: "rgba(16,185,129,0.08)", labelKey: "svc.status.healthy", dot: "🟢" },
+  unhealthy: { color: "#ef4444", bg: "rgba(239,68,68,0.08)", labelKey: "svc.status.unhealthy", dot: "🔴" },
+  unknown: { color: "#f59e0b", bg: "rgba(245,158,11,0.08)", labelKey: "svc.status.unknown", dot: "🟡" },
 } as const;
 
 export function ServiceCard({ data }: { data: ServiceCardData }) {
+  const t = useT();
   const cfg = STATUS_CONFIG[data.status];
   const displayName = data.name
     .replace(/-dev$/, "")
@@ -42,7 +44,7 @@ export function ServiceCard({ data }: { data: ServiceCardData }) {
     >
       {/* Header */}
       <div className="sc-header">
-        <div className="sc-status-dot" title={cfg.label} />
+        <div className="sc-status-dot" title={t(cfg.labelKey)} />
         <div className="sc-info">
           <h3 className="sc-name">{displayName}</h3>
           <span className={`sc-env-badge sc-env-${data.env}`}>
@@ -50,7 +52,7 @@ export function ServiceCard({ data }: { data: ServiceCardData }) {
           </span>
         </div>
         {data.alertCount && data.alertCount > 0 ? (
-          <div className="sc-alert-badge" title={`${data.alertCount} alerte(s)`}>
+          <div className="sc-alert-badge" title={t("svc.alerts", { n: data.alertCount })}>
             <AlertTriangle size={12} />
             {data.alertCount}
           </div>
@@ -70,12 +72,12 @@ export function ServiceCard({ data }: { data: ServiceCardData }) {
 
       {/* Metrics row */}
       <div className="sc-metrics">
-        <div className="sc-metric" title="Requêtes/min">
+        <div className="sc-metric" title={t("svc.requestsPerMin")}>
           <Activity size={12} />
           <span>{data.requestsPerMin ?? "—"}</span>
           <small>/min</small>
         </div>
-        <div className="sc-metric" title="Taux d'erreur">
+        <div className="sc-metric" title={t("svc.errorRate")}>
           <AlertTriangle size={12} />
           <span
             style={{
@@ -91,7 +93,7 @@ export function ServiceCard({ data }: { data: ServiceCardData }) {
             {data.errorRate != null ? `${data.errorRate}%` : "—"}
           </span>
         </div>
-        <div className="sc-metric" title="Latence P50">
+        <div className="sc-metric" title={t("svc.latencyP50")}>
           <Clock size={12} />
           <span
             style={{
@@ -106,7 +108,7 @@ export function ServiceCard({ data }: { data: ServiceCardData }) {
             {data.latencyP50Ms != null ? `${data.latencyP50Ms}ms` : "—"}
           </span>
         </div>
-        <div className="sc-metric" title="Instances actives">
+        <div className="sc-metric" title={t("svc.activeInstances")}>
           <Layers size={12} />
           <span>{data.instanceCount ?? "—"}</span>
         </div>
@@ -116,7 +118,7 @@ export function ServiceCard({ data }: { data: ServiceCardData }) {
       <div className="sc-footer">
         <span><Cpu size={10} /> {data.cpu}</span>
         <span><HardDrive size={10} /> {data.memory}</span>
-        <span>max: {data.maxScale}</span>
+        <span>{t("svc.max")} {data.maxScale}</span>
       </div>
     </Link>
   );

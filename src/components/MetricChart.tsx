@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { X, TrendingUp, Database } from "lucide-react";
+import { useT, useLocale } from "@/lib/i18n";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ function SVGLineChart({
   thresholdLine?: number;
   thresholdLabel?: string;
 }) {
+  const locale = useLocale();
   const [tooltip, setTooltip] = useState<{
     x: number; y: number; lines: string[];
   } | null>(null);
@@ -82,14 +84,14 @@ function SVGLineChart({
   const formatTime = (ts: number) => {
     const d = new Date(ts);
     if (totalHours <= 48) {
-      return d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
     }
-    return d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" });
+    return d.toLocaleDateString(locale, { day: "numeric", month: "short" });
   };
 
   const formatTimeFull = (ts: number) => {
     const d = new Date(ts);
-    return d.toLocaleDateString("fr-CA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   };
 
   const formatY = (v: number) => {
@@ -99,7 +101,7 @@ function SVGLineChart({
   };
 
   const formatYFull = (v: number) => {
-    return v.toLocaleString("fr-CA", { maximumFractionDigits: 2 });
+    return v.toLocaleString(locale, { maximumFractionDigits: 2 });
   };
 
   return (
@@ -275,6 +277,7 @@ function SVGLineChart({
 // ── Main Component ───────────────────────────────────────────────────
 
 export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChartProps) {
+  const t = useT();
   const [range, setRange] = useState<Range>("24h");
   const [loading, setLoading] = useState(true);
   const [budgetPoints, setBudgetPoints] = useState<BudgetPoint[]>([]);
@@ -324,7 +327,7 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
   // Build chart datasets
   const datasets = type === "budget"
     ? [{
-        label: "Coût ($)",
+        label: t("chart.cost"),
         color: "#10b981",
         points: budgetPoints.map((p) => ({
           x: new Date(p.timestamp).getTime(),
@@ -334,7 +337,7 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
     : firestoreData
       ? [
           {
-            label: "Lectures",
+            label: t("chart.reads"),
             color: "#3b82f6",
             points: (firestoreData.reads || []).map((p) => ({
               x: new Date(p.time).getTime(),
@@ -342,7 +345,7 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
             })),
           },
           {
-            label: "Écritures",
+            label: t("chart.writes"),
             color: "#f59e0b",
             points: (firestoreData.writes || []).map((p) => ({
               x: new Date(p.time).getTime(),
@@ -350,7 +353,7 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
             })),
           },
           {
-            label: "Suppressions",
+            label: t("chart.deletes"),
             color: "#ef4444",
             points: (firestoreData.deletes || []).map((p) => ({
               x: new Date(p.time).getTime(),
@@ -386,7 +389,7 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
         {type === "budget" && budgetData && (
           <div className="metric-chart-summary">
             <div className="metric-chart-stat">
-              <span className="metric-chart-stat-label">Coût actuel</span>
+              <span className="metric-chart-stat-label">{t("chart.currentCost")}</span>
               <span className="metric-chart-stat-value" style={{
                 color: budgetData.pct >= 100 ? "#ef4444" : budgetData.pct >= 80 ? "#f59e0b" : "#10b981"
               }}>
@@ -394,13 +397,13 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
               </span>
             </div>
             <div className="metric-chart-stat">
-              <span className="metric-chart-stat-label">Budget</span>
+              <span className="metric-chart-stat-label">{t("infra.budget")}</span>
               <span className="metric-chart-stat-value">
                 ${budgetData.budget.toFixed(2)} {budgetData.currency}
               </span>
             </div>
             <div className="metric-chart-stat">
-              <span className="metric-chart-stat-label">Utilisation</span>
+              <span className="metric-chart-stat-label">{t("chart.usage")}</span>
               <span className="metric-chart-stat-value" style={{
                 color: budgetData.pct >= 100 ? "#ef4444" : budgetData.pct >= 80 ? "#f59e0b" : "#10b981"
               }}>
@@ -418,7 +421,7 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
               className={`metric-chart-range-btn ${range === r ? "active" : ""}`}
               onClick={() => setRange(r)}
             >
-              {r === "24h" ? "24H" : r === "7d" ? "7J" : r === "30d" ? "30J" : "90J"}
+              {t(`chart.range.${r}`)}
             </button>
           ))}
         </div>
@@ -426,12 +429,12 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
         {/* Chart */}
         <div className="metric-chart-body">
           {loading ? (
-            <div className="metric-chart-loading">Chargement...</div>
+            <div className="metric-chart-loading">{t("alerts.loading")}</div>
           ) : (
             <SVGLineChart
               datasets={datasets}
               thresholdLine={type === "budget" && budgetData ? budgetData.budget : undefined}
-              thresholdLabel={type === "budget" ? "Budget max" : undefined}
+              thresholdLabel={type === "budget" ? t("chart.budgetMax") : undefined}
             />
           )}
         </div>
@@ -439,7 +442,7 @@ export function MetricChart({ type, chartKey, budgetData, onClose }: MetricChart
         {/* Info */}
         {type === "budget" && budgetPoints.length === 0 && !loading && (
           <p className="metric-chart-info">
-            L&apos;historique se remplit progressivement à chaque notification GCP.
+            {t("chart.historyInfo")}
           </p>
         )}
       </div>

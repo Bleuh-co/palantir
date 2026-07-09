@@ -1,7 +1,8 @@
 "use client";
 
-import { AlertTriangle, CheckCircle, X } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 
 interface AlertItem {
   id: string;
@@ -19,6 +20,7 @@ interface AlertBannerProps {
 }
 
 export function AlertBanner({ alerts, onDismiss }: AlertBannerProps) {
+  const t = useT();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const visible = alerts.filter((a) => !dismissed.has(a.id));
@@ -35,17 +37,17 @@ export function AlertBanner({ alerts, onDismiss }: AlertBannerProps) {
       </div>
       <div className="alert-banner-content">
         <strong>
-          {critical.length > 0 && `${critical.length} critique(s)`}
+          {critical.length > 0 && t("banner.critical", { n: critical.length })}
           {critical.length > 0 && warnings.length > 0 && " · "}
-          {warnings.length > 0 && `${warnings.length} avertissement(s)`}
+          {warnings.length > 0 && t("banner.warning", { n: warnings.length })}
         </strong>
         <span className="alert-banner-detail">
           {visible[0].message}
-          {visible.length > 1 && ` (+${visible.length - 1} autre${visible.length > 2 ? "s" : ""})`}
+          {visible.length > 1 && ` ${t(visible.length > 2 ? "banner.othersMany" : "banner.othersOne", { n: visible.length - 1 })}`}
         </span>
       </div>
       <a href="/palantir/alerts" className="alert-banner-link">
-        Voir les alertes →
+        {t("banner.seeAlerts")}
       </a>
     </div>
   );

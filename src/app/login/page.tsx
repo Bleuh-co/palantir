@@ -5,9 +5,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { allowedDomains } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export default function LoginPage() {
   const { session, signInWithGoogle, loading } = useAuth();
+  const t = useT();
   const router = useRouter();
   const [ssoChecking, setSsoChecking] = useState(false);
 
@@ -91,7 +93,7 @@ export default function LoginPage() {
             Groupe Chanv
           </p>
           <p className="text-sm text-slate-500 mt-5 leading-relaxed">
-            Connexion réservée aux domaines&nbsp;
+            {t("login.domains")}&nbsp;
             <span className="font-semibold text-chanv-terre">
               {allowedDomains().join(", ")}
             </span>
@@ -103,13 +105,13 @@ export default function LoginPage() {
           className="btn-primary w-full py-4 text-base"
         >
           {ssoChecking
-            ? "Connexion SSO en cours..."
+            ? t("login.ssoChecking")
             : loading
-            ? "Chargement..."
-            : "Se connecter avec Google"}
+            ? t("login.loading")
+            : t("login.signIn")}
         </button>
         <p className="text-xs text-slate-400 text-center mt-6 leading-relaxed">
-          Une session s&apos;ouvrira pour 5 jours.
+          {t("login.sessionNote")}
         </p>
       </div>
     </main>

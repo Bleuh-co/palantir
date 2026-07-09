@@ -9,20 +9,21 @@ import {
   RefreshCw, Shield, Server, AlertTriangle, CheckCircle, Eye,
   ArrowUpDown, ArrowUp, ArrowDown, Database, DollarSign,
 } from "lucide-react";
+import { useT, useLocale } from "@/lib/i18n";
 
 type EnvFilter = "all" | "dev" | "prod";
 
 type SortField = "requests" | "errors" | "latency" | "instances" | "cpu" | "memory" | "name";
 type SortDir = "asc" | "desc";
 
-const SORT_OPTIONS: { value: SortField; label: string; icon: string }[] = [
-  { value: "requests", label: "Requêtes", icon: "⚡" },
-  { value: "errors", label: "Erreurs", icon: "⚠️" },
-  { value: "latency", label: "Latence", icon: "⏱️" },
-  { value: "instances", label: "Instances", icon: "📦" },
-  { value: "cpu", label: "CPU", icon: "🔧" },
-  { value: "memory", label: "Mémoire", icon: "💾" },
-  { value: "name", label: "Nom", icon: "🏷️" },
+const SORT_OPTIONS: { value: SortField; labelKey: string; icon: string }[] = [
+  { value: "requests", labelKey: "sort.requests", icon: "⚡" },
+  { value: "errors", labelKey: "sort.errors", icon: "⚠️" },
+  { value: "latency", labelKey: "sort.latency", icon: "⏱️" },
+  { value: "instances", labelKey: "sort.instances", icon: "📦" },
+  { value: "cpu", labelKey: "sort.cpu", icon: "🔧" },
+  { value: "memory", labelKey: "sort.memory", icon: "💾" },
+  { value: "name", labelKey: "sort.name", icon: "🏷️" },
 ];
 
 function parseCpu(cpu: string): number {
@@ -107,6 +108,8 @@ interface BudgetData {
 }
 
 export function DashboardClient() {
+  const t = useT();
+  const locale = useLocale();
   const [envFilter, setEnvFilter] = useState<EnvFilter>("all");
   const [rawServices, setRawServices] = useState<ServiceCardData[]>([]);
   const [overview, setOverview] = useState<OverviewData | null>(null);
@@ -199,21 +202,21 @@ export function DashboardClient() {
         <div className="status-pills">
           <div className="status-pill status-pill-ok">
             <CheckCircle size={14} />
-            <span>{totalHealthy} OK</span>
+            <span>{totalHealthy} {t("dash.ok")}</span>
           </div>
           {totalUnhealthy > 0 && (
             <div className="status-pill status-pill-error">
               <AlertTriangle size={14} />
-              <span>{totalUnhealthy} erreur{totalUnhealthy > 1 ? "s" : ""}</span>
+              <span>{totalUnhealthy} {t(totalUnhealthy > 1 ? "dash.errorMany" : "dash.errorOne")}</span>
             </div>
           )}
-          <a href="/alertes" className={`status-pill ${overview && overview.alerts.active > 0 ? "status-pill-alert" : "status-pill-neutral"}`} style={{ textDecoration: "none" }}>
+          <a href="/palantir/alerts" className={`status-pill ${overview && overview.alerts.active > 0 ? "status-pill-alert" : "status-pill-neutral"}`} style={{ textDecoration: "none" }}>
             <Shield size={14} />
-            <span>{overview?.alerts.active || 0} alerte{(overview?.alerts.active || 0) !== 1 ? "s" : ""}</span>
+            <span>{overview?.alerts.active || 0} {t((overview?.alerts.active || 0) !== 1 ? "dash.alertMany" : "dash.alertOne")}</span>
           </a>
           <div className="status-pill status-pill-total">
             <Server size={14} />
-            <span>{totalServices} services</span>
+            <span>{totalServices} {t("dash.services")}</span>
           </div>
         </div>
 
@@ -225,7 +228,7 @@ export function DashboardClient() {
                 className={`env-btn ${envFilter === env ? "env-btn-active" : ""}`}
                 onClick={() => setEnvFilter(env)}
               >
-                {env === "all" ? "Tout" : env.toUpperCase()}
+                {env === "all" ? t("dash.all") : env.toUpperCase()}
               </button>
             ))}
           </div>
@@ -234,7 +237,7 @@ export function DashboardClient() {
             onClick={fetchData}
             className="refresh-btn"
             disabled={loading}
-            title="Rafraîchir"
+            title={t("dash.refresh")}
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </button>
@@ -245,7 +248,7 @@ export function DashboardClient() {
       <div className="sort-bar">
         <div className="sort-label">
           <ArrowUpDown size={12} />
-          <span>Trier par</span>
+          <span>{t("dash.sortBy")}</span>
         </div>
         <div className="sort-options">
           {SORT_OPTIONS.map((opt) => (
@@ -253,10 +256,10 @@ export function DashboardClient() {
               key={opt.value}
               className={`sort-btn ${sortField === opt.value ? "sort-btn-active" : ""}`}
               onClick={() => toggleSort(opt.value)}
-              title={`Trier par ${opt.label}`}
+              title={t("dash.sortByTitle", { label: t(opt.labelKey) })}
             >
               <span className="sort-btn-icon">{opt.icon}</span>
-              <span className="sort-btn-label">{opt.label}</span>
+              <span className="sort-btn-label">{t(opt.labelKey)}</span>
               {sortField === opt.value && (
                 sortDir === "desc"
                   ? <ArrowDown size={11} className="sort-dir-icon" />
@@ -271,7 +274,7 @@ export function DashboardClient() {
       {lastRefresh && (
         <p className="last-refresh">
           <Eye size={12} />
-          Dernière mise à jour : {lastRefresh.toLocaleTimeString("fr-CA")}
+          {t("dash.lastRefresh")} {lastRefresh.toLocaleTimeString(locale)}
         </p>
       )}
 
@@ -283,7 +286,7 @@ export function DashboardClient() {
             <div className="billing-section">
               <h3 className="section-title">
                 <DollarSign size={16} />
-                Budget
+                {t("infra.budget")}
               </h3>
               <div className="billing-cards">
                 {Object.entries(budgets).map(([key, b]) => {
@@ -317,7 +320,7 @@ export function DashboardClient() {
                       </div>
                       {b.updatedAt && (
                         <span className="billing-updated">
-                          MAJ: {new Date(b.updatedAt).toLocaleString("fr-CA", { dateStyle: "short", timeStyle: "short" })}
+                          {t("infra.updated")} {new Date(b.updatedAt).toLocaleString(locale, { dateStyle: "short", timeStyle: "short" })}
                         </span>
                       )}
                     </div>
@@ -332,7 +335,7 @@ export function DashboardClient() {
             <div className="firestore-section">
               <h3 className="section-title">
                 <Database size={16} />
-                Firestore
+                {t("infra.firestore")}
               </h3>
               <div className="firestore-cards">
                 {Object.entries(firestore).map(([env, data]) => {
@@ -356,27 +359,27 @@ export function DashboardClient() {
                       </div>
                       <div className="fs-metrics">
                         <div className="fs-metric">
-                          <span className="fs-metric-label">Lectures/h</span>
+                          <span className="fs-metric-label">{t("infra.readsPerHour")}</span>
                           <span className="fs-metric-value" style={{ color: readColor }}>
-                            {data.readsLastHour.toLocaleString("fr-CA")}
+                            {data.readsLastHour.toLocaleString(locale)}
                           </span>
                         </div>
                         <div className="fs-metric">
-                          <span className="fs-metric-label">Écritures/h</span>
+                          <span className="fs-metric-label">{t("infra.writesPerHour")}</span>
                           <span className="fs-metric-value" style={{ color: writeColor }}>
-                            {data.writesLastHour.toLocaleString("fr-CA")}
+                            {data.writesLastHour.toLocaleString(locale)}
                           </span>
                         </div>
                         <div className="fs-metric">
-                          <span className="fs-metric-label">Suppressions/h</span>
+                          <span className="fs-metric-label">{t("infra.deletesPerHour")}</span>
                           <span className="fs-metric-value">
-                            {data.deletesLastHour.toLocaleString("fr-CA")}
+                            {data.deletesLastHour.toLocaleString(locale)}
                           </span>
                         </div>
                         <div className="fs-metric">
-                          <span className="fs-metric-label">Pic lectures</span>
+                          <span className="fs-metric-label">{t("infra.readsPeak")}</span>
                           <span className="fs-metric-value" style={{ color: data.readsPeak > 1_000_000 ? "#ef4444" : undefined }}>
-                            {data.readsPeak.toLocaleString("fr-CA")}
+                            {data.readsPeak.toLocaleString(locale)}
                           </span>
                         </div>
                       </div>
@@ -407,7 +410,7 @@ export function DashboardClient() {
       {!loading && services.length === 0 && (
         <div className="empty-state">
           <Server size={48} strokeWidth={1} />
-          <p>Aucun service trouvé</p>
+          <p>{t("dash.empty")}</p>
         </div>
       )}
 

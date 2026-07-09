@@ -18,6 +18,11 @@
   --color-placeholder: #a0aec0;
   --color-disabled: #6b6b6b;
   --color-danger: #e53e3e;
+  /* Cartes budget (utilisées par .billing-card — valeurs claires) */
+  --card-bg: var(--chanv-blanc);
+  --border: var(--chanv-fibre);
+  --text-primary: var(--chanv-terre);
+  --text-muted: #94a3b8;
 }
 
 html,
@@ -168,6 +173,26 @@ h4 {
     padding: 12px 18px;
     border-radius: var(--radius-chanv);
     box-shadow: var(--shadow-soft);
+  }
+  .chanv-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.75);
+    transition: var(--transition-chanv);
+  }
+  .chanv-nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  .chanv-nav-link.active {
+    background: var(--chanv-beige);
+    color: var(--chanv-terre);
   }
   .chanv-auth-btn {
     display: inline-flex;
@@ -1372,4 +1397,225 @@ a.status-pill:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft
 @media (max-width: 640px) {
   .metric-chart-modal { width: 95vw; }
   .metric-chart-summary { flex-wrap: wrap; gap: 12px; }
+}
+
+/* ============================================================
+   MODE SOMBRE GANDALF — html.gandalf-dark (posé par le SDK/hub)
+   Palette dark du hub : fond #201d19, surfaces #2b2823,
+   texte rgba(255,255,255,.92), bordures rgba(221,203,164,.14),
+   accent or #DDCBA4.
+   NOTE : Palantir est nativement CLAIR (thème parchemin Chanv) ;
+   la modale MetricChart est déjà sombre par design et n'a pas
+   besoin de surcharge. Modèle : xero_photo_achat.
+   ============================================================ */
+
+html.gandalf-dark {
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-bold: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --card-bg: #2b2823;
+  --border: rgba(221, 203, 164, 0.14);
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-muted: rgba(255, 255, 255, 0.45);
+  --color-secondary-bg: rgba(255, 255, 255, 0.08);
+  --color-secondary-text: rgba(255, 255, 255, 0.8);
+  --color-secondary-hover: rgba(255, 255, 255, 0.14);
+}
+
+html.gandalf-dark,
+html.gandalf-dark body {
+  background-color: #201d19;
+  background-image: radial-gradient(rgba(221, 203, 164, 0.07) 1px, transparent 1px);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* --- Surfaces claires → sombres --- */
+html.gandalf-dark .card,
+html.gandalf-dark .section-card,
+html.gandalf-dark .status-bar,
+html.gandalf-dark .service-card,
+html.gandalf-dark .firestore-card,
+html.gandalf-dark .alert-item,
+html.gandalf-dark .metric-chart-card,
+html.gandalf-dark .modal-panel {
+  background: #2b2823;
+  border-color: rgba(221, 203, 164, 0.14);
+}
+html.gandalf-dark .chanv-header::after {
+  background: #201d19;
+}
+html.gandalf-dark .input {
+  background: #201d19;
+  border-color: rgba(221, 203, 164, 0.2);
+  color: rgba(255, 255, 255, 0.92);
+}
+html.gandalf-dark .input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+html.gandalf-dark .label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* --- Boutons --- */
+html.gandalf-dark .btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+html.gandalf-dark .btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+html.gandalf-dark .btn-ghost {
+  color: rgba(255, 255, 255, 0.75);
+}
+html.gandalf-dark .btn-ghost:hover {
+  background: rgba(221, 203, 164, 0.12);
+}
+
+/* --- Titres / textes chanv-terre → or/clair --- */
+html.gandalf-dark .dashboard-title,
+html.gandalf-dark .detail-title,
+html.gandalf-dark .detail-current,
+html.gandalf-dark .section-title,
+html.gandalf-dark .sc-name,
+html.gandalf-dark .alert-service-name,
+html.gandalf-dark .modal-title,
+html.gandalf-dark .fs-metric-value {
+  color: rgba(255, 255, 255, 0.92);
+}
+html.gandalf-dark .text-chanv-terre {
+  color: #ddcba4;
+}
+html.gandalf-dark .text-chanv-terre\/60 {
+  color: rgba(255, 255, 255, 0.55);
+}
+html.gandalf-dark .text-chanv-terre\/80 {
+  color: rgba(255, 255, 255, 0.8);
+}
+html.gandalf-dark .bg-chanv-fibre,
+html.gandalf-dark .hover\:bg-chanv-fibre:hover {
+  background-color: rgba(221, 203, 164, 0.12);
+}
+
+/* --- Pastilles neutres / éléments "fibre" --- */
+html.gandalf-dark .status-pill-neutral,
+html.gandalf-dark .status-pill-total,
+html.gandalf-dark .sc-metric,
+html.gandalf-dark .alert-type-badge,
+html.gandalf-dark .section-num,
+html.gandalf-dark .badge-neutral {
+  background: rgba(221, 203, 164, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* --- Toggles env / période, tri, refresh --- */
+html.gandalf-dark .env-toggle,
+html.gandalf-dark .period-toggle {
+  background: rgba(221, 203, 164, 0.1);
+}
+html.gandalf-dark .env-btn,
+html.gandalf-dark .period-btn {
+  color: rgba(255, 255, 255, 0.55);
+}
+html.gandalf-dark .env-btn:hover,
+html.gandalf-dark .period-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+html.gandalf-dark .env-btn-active,
+html.gandalf-dark .period-btn-active {
+  background: #2b2823;
+  color: #ddcba4;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+html.gandalf-dark .refresh-btn {
+  background: #2b2823;
+  border-color: rgba(221, 203, 164, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+}
+html.gandalf-dark .refresh-btn:hover {
+  border-color: #ddcba4;
+  color: rgba(255, 255, 255, 0.9);
+}
+html.gandalf-dark .sort-btn {
+  border-color: rgba(221, 203, 164, 0.18);
+  color: rgba(255, 255, 255, 0.55);
+}
+html.gandalf-dark .sort-btn:hover {
+  background: rgba(221, 203, 164, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+}
+html.gandalf-dark .sort-btn-active,
+html.gandalf-dark .sort-btn-active:hover {
+  background: #ddcba4;
+  color: #282828;
+  border-color: #ddcba4;
+}
+
+/* --- Cartes service --- */
+html.gandalf-dark .service-card:hover {
+  border-color: rgba(221, 203, 164, 0.45);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+html.gandalf-dark .sc-footer {
+  border-top-color: rgba(221, 203, 164, 0.14);
+}
+html.gandalf-dark .firestore-card:hover {
+  border-color: rgba(221, 203, 164, 0.45);
+}
+
+/* --- Skeleton --- */
+html.gandalf-dark .skeleton-card {
+  background: linear-gradient(110deg, #2b2823 30%, #35312a 50%, #2b2823 70%);
+  background-size: 200% 100%;
+}
+
+/* --- Textes gris (breadcrumb, sous-titres, méta) --- */
+html.gandalf-dark .dashboard-subtitle,
+html.gandalf-dark .detail-back,
+html.gandalf-dark .env-btn,
+html.gandalf-dark .metric-chart-title,
+html.gandalf-dark .modal-subtitle,
+html.gandalf-dark .alert-message {
+  color: rgba(255, 255, 255, 0.6);
+}
+html.gandalf-dark .detail-back:hover {
+  color: rgba(255, 255, 255, 0.92);
+}
+html.gandalf-dark .detail-sep,
+html.gandalf-dark .metric-chart-empty {
+  color: rgba(255, 255, 255, 0.3);
+}
+html.gandalf-dark .sort-label,
+html.gandalf-dark .last-refresh,
+html.gandalf-dark .fs-metric-label,
+html.gandalf-dark .sc-footer,
+html.gandalf-dark .sc-metric small,
+html.gandalf-dark .alert-time,
+html.gandalf-dark .charts-loading,
+html.gandalf-dark .empty-state {
+  color: rgba(255, 255, 255, 0.45);
+}
+html.gandalf-dark .text-slate-400 { color: rgba(255, 255, 255, 0.4); }
+html.gandalf-dark .text-slate-500 { color: rgba(255, 255, 255, 0.55); }
+html.gandalf-dark .text-slate-600 { color: rgba(255, 255, 255, 0.65); }
+html.gandalf-dark .text-slate-700 { color: rgba(255, 255, 255, 0.75); }
+html.gandalf-dark .text-slate-900 { color: rgba(255, 255, 255, 0.92); }
+html.gandalf-dark .bg-white { background-color: #2b2823; }
+
+/* --- Nav d'embed (pastilles) en mode sombre --- */
+html.gandalf-dark .gandalf-embed-nav {
+  background: #201d19;
+}
+html.gandalf-dark .gandalf-embed-nav a {
+  border-color: rgba(221, 203, 164, 0.18);
+  background: #2b2823;
+  color: rgba(255, 255, 255, 0.65);
+}
+html.gandalf-dark .gandalf-embed-nav a:hover {
+  border-color: rgba(221, 203, 164, 0.4);
+  color: rgba(255, 255, 255, 0.92);
+}
+html.gandalf-dark .gandalf-embed-nav a.embed-active,
+html.gandalf-dark .gandalf-embed-nav a[class*="bg-[#A8863F]"] {
+  border-color: #a8863f;
+  background: #a8863f;
+  color: #fff;
 }
