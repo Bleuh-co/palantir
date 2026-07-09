@@ -60,8 +60,8 @@ const COLLECTION_SNAPSHOTS = "palantir_snapshots";
 const COLLECTION_BASELINES = "palantir_baselines";
 const BASELINE_WINDOW_DAYS = 7;
 const MIN_SAMPLES_FOR_BASELINE = 12; // ~12 hours of data minimum
-const WARNING_SIGMA = 2; // 2σ = warning
-const CRITICAL_SIGMA = 3; // 3σ = critical
+const WARNING_SIGMA = 3; // 3σ = warning
+const CRITICAL_SIGMA = 4; // 4σ = critical (push notification threshold)
 
 // ── Snapshot Storage ──────────────────────────────────────────────────
 
@@ -140,16 +140,21 @@ function computeStats(values: number[]): { mean: number; stddev: number } {
 
 /**
  * Recompute the baseline for a specific service using the last 7 days of snapshots.
+ * IMPORTANT: Only uses ACTIVE snapshots (requests > 0) to avoid idle periods
+ * (nighttime, weekends) from polluting the baseline with zeros.
  */
 export async function recomputeBaseline(
   service: string,
   env: Env
 ): Promise<BaselineStats | null> {
-  const snapshots = await getSnapshots(service, env, BASELINE_WINDOW_DAYS);
+  const allSnapshots = await getSnapshots(service, env, BASELINE_WINDOW_DAYS);
+
+  // Filter out idle periods — only compute baseline from active usage
+  const snapshots = allSnapshots.filter((s) => s.requests > 0);
 
   if (snapshots.length < MIN_SAMPLES_FOR_BASELINE) {
     console.log(
-      `[Baseline] ${env}/${service}: Only ${snapshots.length} samples (need ${MIN_SAMPLES_FOR_BASELINE}). Skipping.`
+      `[Baseline] ${env}/${service}: Only ${snapshots.length} active samples out of ${allSnapshots.length} total (need ${MIN_SAMPLES_FOR_BASELINE}). Skipping.`
     );
     return null;
   }
@@ -207,14 +212,37 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 /**
- * Compare current metrics against the baseline.
- * Returns anomalies (values > baseline + 2σ).
+ * Compare current metrics against the baseline (active-hours only).
+ * Returns anomalies (values > baseline + Nσ).
+ *
+ * Handles cold starts: if service was idle (0 requests) and just woke up,
+ * latency/error spikes are expected and ignored.
  */
 export function detectAnomalies(
   current: MetricSnapshot,
   baseline: BaselineStats
 ): Anomaly[] {
   const anomalies: Anomaly[] = [];
+
+  // If service has very few requests, latency & error metrics are unreliable
+  // (cold start penalty, single-request amplification). Skip those.
+  const isColdStart = current.requests > 0 && current.requests < 5;
+
+  // DEV: only flag extreme anomalies (6σ+) to reduce noise
+  const envWarningSigma = current.env === "dev" ? 6 : WARNING_SIGMA;
+  const envCriticalSigma = current.env === "dev" ? 8 : CRITICAL_SIGMA;
+
+  // Minimum σ floors per metric to prevent math artifacts
+  // (e.g., instances: 1 → 2 should NOT be 10σ when σ=0)
+  const STDDEV_FLOOR: Record<string, number> = {
+    requests: 10,
+    errors: 2,
+    errorRate: 5,
+    latencyP50: 100,
+    latencyP99: 200,
+    instances: 2,
+  };
+
   const metricsToCheck: (keyof Pick<
     BaselineStats,
     "requests" | "errors" | "errorRate" | "latencyP50" | "latencyP99" | "instances"
@@ -227,11 +255,18 @@ export function detectAnomalies(
     // Skip metrics with no variance (always 0)
     if (stats.mean === 0 && stats.stddev === 0) continue;
 
+    // Skip latency/error metrics during cold starts (unreliable)
+    if (isColdStart && ["latencyP50", "latencyP99", "errorRate", "errors"].includes(metric)) {
+      continue;
+    }
+
     // Calculate how many standard deviations above the mean
-    const stddev = Math.max(stats.stddev, stats.mean * 0.1); // floor stddev at 10% of mean
+    // Use a meaningful floor to avoid math artifacts (σ=0 → infinite deviations)
+    const floor = STDDEV_FLOOR[metric] || stats.mean * 0.1;
+    const stddev = Math.max(stats.stddev, floor);
     const deviations = stddev > 0 ? (value - stats.mean) / stddev : 0;
 
-    if (deviations >= WARNING_SIGMA) {
+    if (deviations >= envWarningSigma) {
       anomalies.push({
         metric,
         label: METRIC_LABELS[metric] || metric,
@@ -239,7 +274,7 @@ export function detectAnomalies(
         baselineMean: stats.mean,
         baselineStddev: stats.stddev,
         deviations: Math.round(deviations * 10) / 10,
-        severity: deviations >= CRITICAL_SIGMA ? "critical" : "warning",
+        severity: deviations >= envCriticalSigma ? "critical" : "warning",
       });
     }
   }

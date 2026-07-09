@@ -73,7 +73,7 @@ export async function listServices(env: Env): Promise<ServiceInfo[]> {
     const container = template?.containers?.[0];
     const scaling = template?.scaling;
     const conditions: any[] = svc.conditions || [];
-    const readyCondition = conditions.find((c: any) => c.type === "Ready");
+    const readyCondition = svc.terminalCondition || conditions.find((c: any) => c.type === "Ready");
     const status: ServiceInfo["status"] =
       readyCondition?.state === "CONDITION_SUCCEEDED" || readyCondition?.status === "True"
         ? "healthy"
