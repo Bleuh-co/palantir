@@ -15,9 +15,8 @@ const HUB_URL =
   process.env.NEXT_PUBLIC_HUB_URL ||
   "https://chanv-apps-hub-271227085398.northamerica-northeast1.run.app";
 
-const PALANTIR_URL =
-  process.env.PALANTIR_URL ||
-  "https://palantir-271227085398.northamerica-northeast1.run.app";
+// URL publique canonique — les liens partent dans des notifications stockées (artefacts durables).
+const PALANTIR_URL = process.env.PALANTIR_URL || "https://palantir.chanv.com";
 const NOTIF_KEY = process.env.NOTIF_API_KEY || "";
 
 interface NotifPayload {

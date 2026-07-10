@@ -55,7 +55,7 @@ steps:
       - --port=8080
       - --memory=1Gi
       - --cpu=1
-      - --update-env-vars=HUB_URL=https://gandalf.chanv.com
+      - --update-env-vars=HUB_URL=https://gandalf.chanv.com,PALANTIR_URL=https://palantir.chanv.com
 
 images:
   - "${_IMAGE}:${_TAG}"
