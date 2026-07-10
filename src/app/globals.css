@@ -1619,3 +1619,10 @@ html.gandalf-dark .gandalf-embed-nav a[class*="bg-[#A8863F]"] {
   background: #a8863f;
   color: #fff;
 }
+
+/* Fenêtres redimensionnées (desktop) : les pastilles d'embed passent à la
+   ligne — scrollbar masquée + molette = derniers onglets inaccessibles. */
+@media (hover: hover) and (pointer: fine) {
+    html.gandalf-embed #gandalf-embed-nav,
+    #gandalf-embed-nav { flex-wrap: wrap; overflow-x: visible; }
+}
